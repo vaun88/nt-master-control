@@ -836,7 +836,121 @@
             <h3 className="text-lg font-bold text-gray-900 mb-4">Sample Container Tracking</h3>
             <div className="space-y-4">
               {CONTAINERS_SAMPLE.map((container, idx) => (
-                <div ke    <td className="font-semibold">{formatCurrency(item.amount)}</td>
+                <div key={idx} className="container-card">
+                  <div className="flex justify-between items-start mb-4">
+                    <div>
+                      <p className="font-bold text-lg text-gray-900">{container.vessel}</p>
+                      <p className="text-sm text-gray-600 font-mono">{container.container}</p>
+                    </div>
+                    <div className="text-right">
+                      <ContainerStatusBadge status={container.status} />
+                      <p className="text-xs text-gray-500 mt-2">{container.supplier}</p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                      <p className="text-xs text-gray-500 uppercase">Route</p>
+                      <p className="text-sm font-semibold text-gray-900">{container.origin} {ICONS.arrow} {container.destination}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500 uppercase">Dates</p>
+                      <p className="text-sm font-semibold text-gray-900">ETD: {container.etd} | ETA: {container.eta}</p>
+                    </div>
+                  </div>
+                  <div className="mb-2">
+                    <p className="text-xs text-gray-600 mb-2">Models: {container.models}</p>
+                  </div>
+                  <div className="progress-bar">
+                    <div className="progress-fill" style={{ width: container.progress + '%' }}></div>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">{container.progress}% Complete</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {containerArrivalsData.length > 0 && (
+            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+              <h3 className="text-lg font-bold text-gray-900 mb-4">Sheet Data - Container Arrivals</h3>
+              <table className="status-table">
+                <thead>
+                  <tr>
+                    <th>Pivot Order</th>
+                    <th>Container #</th>
+                    <th>Vessel</th>
+                    <th>ETA</th>
+                    <th>Status</th>
+                    <th>Models</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {containerArrivalsData.map((item, idx) => (
+                    <tr key={idx}>
+                      <td>{item['Pivot Order'] || '-'}</td>
+                      <td className="font-mono">{item['Container #'] || '-'}</td>
+                      <td>{item.Vessel || '-'}</td>
+                      <td>{formatDate(item['ETA Arrival Date'])}</td>
+                      <td>{item.Status || '-'}</td>
+                      <td className="text-sm">{item['Models In Container'] || '-'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      );
+    };
+
+    const TradeFinancePage = ({ tradeFinance, togglePaid }) => {
+      const activeTF = tradeFinance.filter(tf => !tf.paid);
+      const paidTF = tradeFinance.filter(tf => tf.paid);
+      const tradeFinanceTotal = activeTF.reduce((sum, tf) => sum + tf.amount, 0);
+      const importFinanceTotal = activeTF.filter(tf => tf.product === 'Import Finance').reduce((sum, tf) => sum + tf.amount, 0);
+      const ttRefinanceTotal = activeTF.filter(tf => tf.product === 'TT Refinance').reduce((sum, tf) => sum + tf.amount, 0);
+      const sorted = [...activeTF].sort((a, b) => calculateDaysUntilMaturity(a.maturityDate) - calculateDaysUntilMaturity(b.maturityDate));
+      const nextMaturity = sorted[0];
+      const paidTotal = paidTF.reduce((sum, tf) => sum + tf.amount, 0);
+
+      return (
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
+            <KPICard title="Total Outstanding" value={formatCurrency(tradeFinanceTotal)} icon={ICONS.money} color="text-red-500" />
+            <KPICard title="Import Finance" value={formatCurrency(importFinanceTotal)} icon={ICONS.inbox} color="text-blue-500" />
+            <KPICard title="TT Refinance" value={formatCurrency(ttRefinanceTotal)} icon={ICONS.chart} color="text-purple-500" />
+            <KPICard title="Next Maturity" value={nextMaturity ? formatDate(nextMaturity.maturityDate) : 'N/A'} icon={ICONS.calendar} color="text-amber-500" />
+            <KPICard title="Paid" value={formatCurrency(paidTotal)} icon={ICONS.check} color="text-green-500" />
+          </div>
+
+          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 overflow-x-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-bold text-gray-900">Outstanding Facilities</h3>
+              <span className="text-xs text-gray-500">{activeTF.length} active {ICONS.bullet} {formatCurrency(tradeFinanceTotal)}</span>
+            </div>
+            <table className="status-table">
+              <thead>
+                <tr>
+                  <th>Bank Reference</th>
+                  <th>Product</th>
+                  <th>Counterparty</th>
+                  <th>Customer Ref</th>
+                  <th>Amount (AUD)</th>
+                  <th>Maturity Date</th>
+                  <th>Status</th>
+                  <th>Interest Rate</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sorted.map((item, idx) => {
+                  const days = calculateDaysUntilMaturity(item.maturityDate);
+                  return (
+                    <tr key={idx}>
+                      <td className="font-mono text-xs">{item.bankRef}</td>
+                      <td className="text-sm">{item.product}</td>
+                      <td className="text-sm">{item.counterparty}</td>
+                      <td className="text-xs">{item.customerRef || '-'}</td>
+                      <td className="font-semibold">{formatCurrency(item.amount)}</td>
                       <td>{formatDate(item.maturityDate)}</td>
                       <td><MaturityBadge days={days} /></td>
                       <td>{item.interestRate}</td>
@@ -912,7 +1026,7 @@
                   <th>Maturity Date</th>
                   <th>Currency</th>
                   <th>Amount</th>
-                  <th>RatE</th>
+                  <th>Rate</th>
                   <th>Status</th>
                 </tr>
               </thead>
@@ -953,134 +1067,6 @@
         <div className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             <KPICard title="Models" value={models} icon={ICONS.package} color="text-blue-500" />
-            <KPICard title="Avg Cost" value={formatCurrency(avgCost)} icon={ICONS.dollar} color="text-gray-500" />
-            <KPICard title="Avg RRP" value={formatCurrency(avgRRP)} icon={ICONS.dollarSign} color="text-green-500" />
-            <KPICard title="Avg Margin %" value={avgMarginPercent.toFixed(1) + '%'} icon={ICONS.chartUp} color="text-purple-500" />
-          </div>
-
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 overflow-x-auto">
-            <table className="status-table">
-              <thead>
-                <tr>
-                  <th>Model</th>
-                  <th>Cost (ex GST)</th>
-                  <th>RRP (inc GST)</th>
-                  <th>Margin ($)</th>
-                  <th>Margin (%)</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.map((item, idx) => {
-                  const cost = parseFloat(item['Cost Price (ex.gst)']) || 0;
-                  const rrp = parseFloat(item['RRP (inc. gst)']) || 0;
-                  const margin = rrp - cost;
-                  const marginPercent = cost > 0 ? (margin / cost * 100) : 0;
-                  return (
-                    <tr key={idx}>
-                      <td className="font-semibold">{item.Model}</td>
-                      <td>{formatCurrency(cost)}</td>
-                      <td>{formatCurrency(rrp)}</td>
-                      <td>{formatCurrency(margin)}</td>
-                      <td className="font-semibold text-green-600">{marginPercent.toFixed(1)}%</td>
-                    </tr>
-                  );
-                })}
-                <tr className="border-t-2 border-gray-300 bg-gray-50 font-bold">
-                  <td>TOTALS</td>
-                  <td>{formatCurrency(totalCost)}</td>
-                  <td>{formatCurrency(totalRRP)}</td>
-                  <td>{formatCurrency(totalRRP - totalCost)}</td>
-                  <td className="text-green-600">{((totalRRP - totalCost) / totalCost * 100).toFixed(1)}%</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      );
-    };
-
-    const CRMPage = () => (
-      <div className="coming-soon">
-        <div className="coming-soon-icon">{String.fromCodePoint(0x1F680)}</div>
-        <h2 className="text-3xl font-bold text-gray-900">Coming Soon</h2>
-        <p className="text-xl text-gray-600 mt-4">CRM module is under development</p>
-        <div className="mt-8 text-left">
-          <p className="text-gray-700 font-semibold mb-4">Planned Features:</p>
-          <ul className="space-y-2 text-gray-600">
-            <li>{ICONS.checkmark} Lead Management</li>
-            <li>{ICONS.checkmark} Sales Pipeline</li>
-            <li>{ICONS.checkmark} Customer Database</li>
-            <li>{ICONS.checkmark} Follow-up Automation</li>
-          </ul>
-        </div>
-      </div>
-    );
-
-    const SettingsPage = () => (
-      <div className="space-y-6">
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-          <h3 className="text-lg font-bold text-gray-900 mb-4">Data Source Information</h3>
-          <div className="space-y-4">
-            <div>
-              <p className="text-sm text-gray-600 font-semibold">Sheet ID</p>
-              <p className="font-mono text-sm text-gray-800 break-all">{SHEET_ID}</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-600 font-semibold">TebY</p>
-              <ul className="text-sm text-gray-800 space-y-1">
-                <li>{ICONS.bullet} NT Trailers Trailers (main stock)</li>
-                <li>{ICONS.bullet} Container Arrivals (shipping)</li>
-                <li>{ICONS.bullet} Pricing (model pricing)</li>
-              </ul>
-            </div>
-            <div>
-              <p className="text-sm text-gray-600 font-semibold">Last Refresh</p>
-              <p className="text-sm text-gray-800">Use the refresh button in the top bar to fetch latest data</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-          <h3 className="text-lg font-bold text-gray-900 mb-4">Version Information</h3>
-          <div className="space-y-2">
-            <p className="text-sm text-gray-800"><span className="font-semibold">Version:</span> 1.1</p>
-            <p className="text-sm text-gray-800"><span className="font-semibold">Status:</span> Live Sheet Data</p>
-          </div>
-        </div>
-      </div>
-    );
-
-    // Main App Component
-    const App = () => {
-      const [currentPage, setCurrentPage] = useState('dashboard');
-      const [inventoryData, setInventoryData] = useState([]);
-      const [containerArrivalsData, setContainerArrivalsData] = useState([]);
-      const [pricingData, setPricingData] = useState([]);
-      const [lastUpdated, setLastUpdated] = useState(new Date());
-      const [loading, setLoading] = useState(true);
-      const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-      const [tradeFinance, setTradeFinance] = useState(loadTradeFinance());
-
-      const togglePaid = (bankRef) => {
-        setTradeFinance(prev => {
-          const updated = prev.map(tf => tf.bankRef === bankRef ? { ...tf, paid: !tf.paid, paidDate: !tf.paid ? new Date().toLocaleDateString('en-AU', { day: '2-digit', month: '2-digit', year: 'numeric' }) : null } : tf);
-          saveTradeFinancePaidStatus(updated);
-          return updated;
-        });
-      };
-
-      const loadData = async () => {
-        setLoading(true);
-        try {
-          const [inventory, containers, pricingW = await Promise.all([
-            fetchGoogleSheet('NT Trailers Trailers'),
-            fetchGoogleSheet('Container Arrivals'),
-            fetchGoogleSheet('Pricing'),
-          ]);
-          setInventoryData(inventory);
-          setContainerArrivalsData(containers);
-          setPricingData(pricing);
-        <KPICard title="Models" value={models} icon={ICONS.package} color="text-blue-500" />
             <KPICard title="Avg Cost" value={formatCurrency(avgCost)} icon={ICONS.dollar} color="text-gray-500" />
             <KPICard title="Avg RRP" value={formatCurrency(avgRRP)} icon={ICONS.dollarSign} color="text-green-500" />
             <KPICard title="Avg Margin %" value={avgMarginPercent.toFixed(1) + '%'} icon={ICONS.chartUp} color="text-purple-500" />
