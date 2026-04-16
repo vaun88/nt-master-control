@@ -267,76 +267,246 @@
     const SHEET_ID = '1t_dtZilxleZPcx1s_jJ6IPWh0DvwRn3KiUgKyKJuETs';
 
     const TRADE_FINANCE_DEFAULT = [
-      {
-        product: 'Import Finance',
-        bankRef: 'FI20262614033',
-        counterparty: 'ADV Trading Pty Ltd',
-        customerRef: '',
-        invoiceDate: '02/01/2026',
-        establishDate: '20/02/2026',
-        maturityDate: '01/07/2026',
-        currency: 'AUD',
-        amount: 74690.06,
-        interestRate: '8.03%',
-        paid: false,
-        paidDate: null
-      }
+      { product: 'Import Finance', bankRef: 'FI2026261403', counterparty: 'ADV Trading Pty Ltd', customerRef: '', invoiceDate: '02/01/2026', establishDate: '20/02/2026', maturityDate: '01/07/2026', currency: 'AUD', amount: 74690.06, interestRate: '8.03%', paid: false, paidDate: null },
+      { product: 'Import Finance', bankRef: 'FI2025225981', counterparty: 'ADV Trading Pty Ltd', customerRef: '', invoiceDate: '20/10/2025', establishDate: '02/12/2025', maturityDate: '17/04/2026', currency: 'AUD', amount: 43911.29, interestRate: '7.77%', paid: true, paidDate: '13/04/2026' },
+      { product: 'Import Finance', bankRef: 'FI2025218573', counterparty: 'ADV Trading Pty Ltd', customerRef: '', invoiceDate: '17/10/2025', establishDate: '18/11/2025', maturityDate: '15/04/2026', currency: 'AUD', amount: 26943.34, interestRate: '7.71%', paid: true, paidDate: '13/04/2026' },
+      { product: 'TT Refinance', bankRef: 'FT2026282308', counterparty: 'Zhenjiang Towhaul Trailer Co.,Ltd', customerRef: 'TH-26002 FullPay', invoiceDate: '31/03/2026', establishDate: '31/03/2026', maturityDate: '25/09/2026', currency: 'AUD', amount: 46954.96, interestRate: '8.64%', paid: false, paidDate: null },
+      { product: 'TT Refinance', bankRef: 'FT2026281009', counterparty: 'Kindle Technology Co., Limited', customerRef: 'NTT71-85 Deposit', invoiceDate: '30/03/2026', establishDate: '30/03/2026', maturityDate: '25/09/2026', currency: 'AUD', amount: 58079.68, interestRate: '8.63%', paid: false, paidDate: null },
+      { product: 'TT Refinance', bankRef: 'FT2026278335', counterparty: 'Guangdong Ecocampor Vehicle Co., Ltd', customerRef: 'NTT62-67 Deposit', invoiceDate: '24/03/2026', establishDate: '24/03/2026', maturityDate: '18/09/2026', currency: 'AUD', amount: 60113.14, interestRate: '8.65%', paid: false, paidDate: null },
+      { product: 'TT Refinance', bankRef: 'FT2026277528', counterparty: 'Guangdong Ecocampor Vehicle Co., Ltd', customerRef: 'NTT57-58 Full pay', invoiceDate: '23/03/2026', establishDate: '23/03/2026', maturityDate: '18/09/2026', currency: 'AUD', amount: 46723.51, interestRate: '8.62%', paid: false, paidDate: null },
     ];
 
-    const calculateDaysUntilMaturity = (maturityDate) => {
-      if (!maturityDate) return null;
-      const [day, month, year] = maturityDate.split('/');
-      const date = new Date(`${year}-${month}-${day}`);
-      const today = new Date();
-      const diff = Math.ceil((date - today) / (1000 * 60 * 60 * 24));
-      return diff > 0 ? diff : 0;
+    // Load paid status from localStorage, merging with defaults
+    const loadTradeFinance = () => {
+      try {
+        const saved = JSON.parse(localStorage.getItem('tf_paid_status') || '{}');
+        return TRADE_FINANCE_DEFAULT.map(tf => ({
+          ...tf,
+          paid: saved[tf.bankRef] !== undefined ? saved[tf.bankRef].paid : tf.paid,
+          paidDate: saved[tf.bankRef] !== undefined ? saved[tf.bankRef].paidDate : tf.paidDate,
+        }));
+      } catch (e) { return TRADE_FINANCE_DEFAULT; }
+    };
+
+    const saveTradeFinancePaidStatus = (tradeFinance) => {
+      const status = {};
+      tradeFinance.forEach(tf => { status[tf.bankRef] = { paid: tf.paid, paidDate: tf.paidDate }; });
+      localStorage.setItem('tf_paid_status', JSON.stringify(status));
+    };
+
+    const CONTAINERS_SAMPLE = [
+      { pivotOrder: 'PFS-8230', container: 'TEMU8834521', vessel: 'CMA CGM MARCO POLO', origin: 'Ningbo, China', destination: 'Brisbane, AU', etd: '28-Mar-2026', eta: '22-Apr-2026', status: 'In Transit', progress: 65, supplier: 'Kindle Technology', models: 'NTT71-85 (15x Tradesman 8x5)' },
+      { pivotOrder: 'PFS-8215', container: 'MSCU7291034', vessel: 'MSC ANNA', origin: 'Guangzhou, China', destination: 'Brisbane, AU', etd: '20-Mar-2026', eta: '18-Apr-2026', status: 'In Transit', progress: 78, supplier: 'Ecocampor Vehicle', models: 'NTT62-67 (6x Motorbike Trailer Dual)' },
+      { pivotOrder: 'PFS-8198', container: 'TCKU6543219', vessel: 'COSCO SHIPPING LEO', origin: 'Zhenjiang, China', destination: 'Brisbane, AU', etd: '15-Mar-2026', eta: '12-Apr-2026', status: 'Arrived - Awaiting Clearance', progress: 95, supplier: 'Zhenjiang Towhaul', models: 'TH-26002 (1x Combo XL)' },
+      { pivotOrder: 'PFS-8245', container: 'OOLU8127463', vessel: 'EVER GIVEN', origin: 'Guangzhou, China', destination: 'Sydney, AU', etd: '02-Apr-2026', eta: '30-Apr-2026', status: 'Departed Origin', progress: 25, supplier: 'Ecocampor Vehicle', models: 'NTT57-58 (2x Apex Toy Hauler)' },
+    ];
+
+    // Utility Functions
+    const formatCurrency = (num) => {
+      if (typeof num !== 'number') return '$0.00';
+      return '$' + num.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
     };
 
     const formatDate = (dateStr) => {
-      if (!dateStr) return '-';
-      const [day, month, year] = dateStr.split('/');
-      return `${day}/${month}/${year}`;
-    };
-
-    const calculateDTP = (etaStr) => {
-      if (!etaStr) return 0;
-      const [day, month, year] = etaStr.split('/');
-      const date = new Date(`${year}-${month}-${day}`);
-      const today = new Date();
-      const diff = Math.ceil((date - today) / (1000 * 60 * 60 * 24));
-      return diff > 0 ? `${diff} days` : 'Overdue';
-    };
-
-    const columnHeaders = ['VIN', 'Model', 'Colour', 'Warehouse', 'NEVDIS', 'RAV', 'Status', 'Customer', 'Invoice', 'Sale Price', 'Collection', 'Notes'];
-
-    const convertToObject = (row) => {
-      const obj = {};
-      row.forEach((cell, index) => {
-        obj[columnHeaders[index]] = cell ? cell.v : null;
-      });
-      return obj;
-    };
-
-    const fetchGoogleSheet = async (sheetName) => {
-      const url = `https://sheets.googleapis.com/v4/spreadsheets/S1t_dtZilxleZPcx1s_jJ6IPWh0DvwRn3KiUgKyKJuETs/values?range=${encodeURIComponent(sheetName)}!A:: &key=AAzaSyDUs_DUWhJ9NHC0eGQVE9NuYgR9espYlPa4B7g&alt=json`;
+      if (!dateStr) return '';
       try {
-        const response = await fetch(url);
-        const data = await response.json();
-        return data;
-      } catch (error) {
-        console.error('Error fetching data:', error);
+        const parts = dateStr.split('/');
+        if (parts.length === 3) {
+          const d = new Date(parts[2], parts[1] - 1, parts[0]);
+          return d.toLocaleDateString('en-AU', { day: '2-digit', month: 'short', year: 'numeric' });
+        }
+      } catch (e) {}
+      return dateStr;
+    };
+
+    const calculateDaysUntilMaturity = (dateStr) => {
+      try {
+        const parts = dateStr.split('/');
+        if (parts.length === 3) {
+          const maturityDate = new Date(parts[2], parts[1] - 1, parts[0]);
+          const today = new Date('2026-04-13');
+          const diff = Math.ceil((maturityDate - today) / 86400000);
+          return diff;
+        }
+      } catch (e) {}
+      return 0;
+    };
+
+    const parseGoogleSheetsResponse = (jsonString) => {
+      try {
+        const stripped = jsonString.replace(/^\/\*O_o\*\/\s*/, '');
+        const cleaned = stripped.replace(/^google\.visualization\.Query\.setResponse\(/, '').replace(/\);?\s*$/, '');
+        return JSON.parse(cleaned);
+      } catch (e) {
+        console.error('Parse error:', e);
         return null;
       }
     };
 
+    const extractTableData = (response) => {
+      if (!response || !response.table || !response.table.rows) return [];
+      const cols = response.table.cols || [];
+      const rows = response.table.rows || [];
+      return rows.map(row => {
+        const obj = {};
+        (row.c || []).forEach((cell, idx) => {
+          const colLabel = cols[idx] ? cols[idx].label : 'col_' + idx;
+          obj[colLabel] = cell ? cell.v : null;
+        });
+        return obj;
+      });
+    };
+
+    const fetchGoogleSheet = async (sheetName) => {
+      const url = 'https://docs.google.com/spreadsheets/d/' + SHEET_ID + '/gviz/tq?tqx=out:json&sheet=' + encodeURIComponent(sheetName);
+      try {
+        const res = await fetch(url);
+        const text = await res.text();
+        const parsed = parseGoogleSheetsResponse(text);
+        return extractTableData(parsed);
+      } catch (e) {
+        console.error('Fetch error for ' + sheetName + ':', e);
+        return [];
+      }
+    };
+
+    // Chart Components
+    const StockByModelChart = ({ data }) => {
+      const canvasRef = useRef(null);
+      const chartRef = useRef(null);
+
+      useEffect(() => {
+        if (!canvasRef.current || !data || data.length === 0) return;
+
+        const modelCounts = {};
+        data.forEach(item => {
+          const model = item.Model || 'Unknown';
+          modelCounts[model] = (modelCounts[model] || 0) + 1;
+        });
+
+        const sortedModels = Object.entries(modelCounts).sort((a, b) => b[1] - a[1]).slice(0, 10);
+        const ctx = canvasRef.current.getContext('2d');
+
+        if (chartRef.current) chartRef.current.destroy();
+
+        chartRef.current = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: sortedModels.map(m => m[0]),
+            datasets: [{ label: 'Count', data: sortedModels.map(m => m[1]), backgroundColor: '#3b82f6', borderRadius: 8, borderSkipped: false }],
+          },
+          options: {
+            indexAxis: 'y',
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: { x: { beginAtZero: true, ticks: { stepSize: 1 } } },
+          },
+        });
+
+        return () => {
+          if (chartRef.current) chartRef.current.destroy();
+        };
+      }, [data]);
+
+      return <div style={{ height: '250px' }}><canvas ref={canvasRef}></canvas></div>;
+    };
+
+    const StockByStatusChart = ({ data }) => {
+      const canvasRef = useRef(null);
+      const chartRef = useRef(null);
+
+      useEffect(() => {
+        if (!canvasRef.current || !data || data.length === 0) return;
+
+        const statusCounts = {};
+        data.forEach(item => {
+          const status = item.Status || 'Unknown';
+          statusCounts[status] = (statusCounts[status] || 0) + 1;
+        });
+
+        const ctx = canvasRef.current.getContext('2d');
+        if (chartRef.current) chartRef.current.destroy();
+
+        const colors = { 'In Stock': '#3b82f6', 'Collected': '#1e40af', 'Paid in Full': '#f59e0b', 'Deposit Paid': '#fbbf24' };
+
+        chartRef.current = new Chart(ctx, {
+          type: 'doughnut',
+          data: {
+            labels: Object.keys(statusCounts),
+            datasets: [{ data: Object.values(statusCounts), backgroundColor: Object.keys(statusCounts).map(s => colors[s] || '#9ca3af'), borderColor: 'white', borderWidth: 2 }],
+          },
+          options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } },
+        });
+
+        return () => {
+          if (chartRef.current) chartRef.current.destroy();
+        };
+      }, [data]);
+
+      return <div style={{ height: '250px' }}><canvas ref={canvasRef}></canvas></div>;
+    };
+
+    const WarehouseChart = ({ data }) => {
+      const canvasRef = useRef(null);
+      const chartRef = useRef(null);
+
+      useEffect(() => {
+        if (!canvasRef.current || !data || data.length === 0) return;
+
+        const warehouseCounts = {};
+        data.forEach(item => {
+          const warehouse = item.Warehouse || 'Unknown';
+          warehouseCounts[warehouse] = (warehouseCounts[warehouse] || 0) + 1;
+        });
+
+        const ctx = canvasRef.current.getContext('2d');
+        if (chartRef.current) chartRef.current.destroy();
+
+        const colors = { 'Jade': '#10b981', 'Expansion': '#a855f7', 'Sydney': '#06b6d4' };
+
+        chartRef.current = new Chart(ctx, {
+          type: 'pie',
+          data: {
+            labels: Object.keys(warehouseCounts),
+            datasets: [{ data: Object.values(warehouseCounts), backgroundColor: Object.keys(warehouseCounts).map(w => colors[w] || '#9ca3af'), borderColor: 'white', borderWidth: 2 }],
+          },
+          options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } },
+        });
+
+        return () => {
+          if (chartRef.current) chartRef.current.destroy();
+        };
+      }, [data]);
+
+      return <div style={{ height: '220px' }}><canvas ref={canvasRef}></canvas></div>;
+    };
+
+    // Badge Components
     const StatusBadge = ({ status }) => {
-      const colors = {
-        'Paid': 'badge-green',
-        'Pending': 'badge-amber',
-        'Overdue': 'badge-red',
-        'Processing': 'badge-blue',
-        'Clearance': 'badge-green'
-      };
+      const statusColors = { 'In Stock': 'badge-green', 'Collected': 'badge-blue', 'Paid in Full': 'badge-amber', 'Deposit Paid': 'badge-yellow' };
+      const colorClass = statusColors[status] || 'badge-gray';
+      return <span className={'badge ' + colorClass}>{status}</span>;
+    };
+
+    const ComplianceBadge = ({ status }) => {
+      return status === 'Completed' ? <span className="badge badge-green">{status}</span> : <span className="badge badge-orange">TBC</span>;
+    };
+
+    const WarehouseBadge = ({ warehouse }) => {
+      const warehouseColors = { 'Jade': 'badge-green', 'Expansion': 'badge-purple', 'Sydney': 'badge-sky' };
+      const colorClass = warehouseColors[warehouse] || 'badge-gray';
+      return <span className={'badge ' + colorClass}>{warehouse}</span>;
+    };
+
+    const MaturityBadge = ({ days }) => {
+      if (days < 0) return <span className="badge badge-red">OVERDUE</span>;
+      else if (days <= 30) return <span className="badge badge-amber">Due in {days}d</span>;
+      else return <span className="badge badge-green">{days}d</span>;
+    };
+
+    const ContainerStatusBadge = ({ status }) => {
+      const colors = { 'In Transit': 'badge-blue', 'Departed Origin': 'badge-amber', 'Arrived - Awaiting Clearance': 'badge-green' };
       const colorClass = colors[status] || 'badge-gray';
       return <span className={'badge ' + colorClass}>{status}</span>;
     };
@@ -344,21 +514,21 @@
     // Encoding-safe icon constants (avoids UTF-8 corruption during upload)
     const ICONS = {
       package: String.fromCodePoint(0x1F4E6),     // box
-      chart: String.fromCodePoint(0x1F4CA),       // bar chart
-      money: String.fromCodePoint(0x1F4B0),       // money bag
-      check: String.fromCodePoint(0x2705),        // green check
-      calendar: String.fromCodePoint(0x1F4C5),    // calendar
-      dollar: String.fromCodePoint(0x1F4B5),      // dollar bill
-      inbox: String.fromCodePoint(0x1F4E5),       // inbox tray
-      dollarSign: String.fromCodePoint(0x1F4B2),  // heavy dollar sign
-      chartUp: String.fromCodePoint(0x1F4C8),     // chart increasing
-      refresh: String.fromCodePoint(0x1F504),     // arrows cycle
-      ship: String.fromCodePoint(0x1F6A2),        // ship
-      people: String.fromCodePoint(0x1F465),      // people
-      gear: String.fromCodePoint(0x2699),         // gear
-      checkmark: '\u2713',                        // checkmark
-      bullet: '\u2022',                            // bullet
-      arrow: '\u2192',                             // right arrow
+      chart: String.fromCodePoint(0x1F4CA),        // bar chart
+      money: String.fromCodePoint(0x1F4B0),        // money bag
+      check: String.fromCodePoint(0x2705),         // green check
+      calendar: String.fromCodePoint(0x1F4C5),     // calendar
+      dollar: String.fromCodePoint(0x1F4B5),       // dollar bill
+      inbox: String.fromCodePoint(0x1F4E5),        // inbox tray
+      dollarSign: String.fromCodePoint(0x1F4B2),   // heavy dollar sign
+      chartUp: String.fromCodePoint(0x1F4C8),      // chart increasing
+      refresh: String.fromCodePoint(0x1F504),      // arrows cycle
+      ship: String.fromCodePoint(0x1F6A2),         // ship
+      people: String.fromCodePoint(0x1F465),       // people
+      gear: String.fromCodePoint(0x2699),          // gear
+      checkmark: '\u2713',                          // checkmark
+      bullet: '\u2022',                             // bullet
+      arrow: '\u2192',                              // right arrow
     };
 
     // KPI Card Component
@@ -366,204 +536,878 @@
       <div className="kpi-card">
         <div className="flex items-start justify-between">
           <div>
-            <p className="text-sm text-gray-600 mb-2">{title}</p>
-            <p className="text-2xl font-bold text-gray-900">{value}</p>
+            <p className="text-gray-600 text-sm font-medium mb-4">{title}</p>
+            <p className="text-3xl font-bold text-gray-900">{value}</p>
           </div>
-          <span style={{ color, fontSize: '24px' }}>{icon}</span>
+          <div className={'text-4xl ' + color}>{icon}</div>
         </div>
       </div>
     );
 
-    // Finance Page
-    const FinancePage = ({ data }) => {
-      const [paidTF, setPaidTF] = useState([]);
-      const [upcomingTFSorted, setUpcomingTFSorted] = useState([]);
+    // Page Components
+    const DashboardPage = ({ inventoryData, containerArrivalsData, pricingData, lastUpdated, tradeFinance, togglePaid }) => {
+      const totalStock = inventoryData.length;
+      const inStock = inventoryData.filter(i => i.Status === 'In Stock').length;
+      const soldCollected = inventoryData.filter(i => ['Collected', 'Paid in Full', 'Deposit Paid'].includes(i.Status)).length;
+      const stockValue = inventoryData.reduce((sum, i) => sum + (parseFloat(i['Cost Value']) || 0), 0);
+      const nevdisCompleted = inventoryData.filter(i => i.NEVDIS === 'Completed').length;
+      const ravCompleted = inventoryData.filter(i => i.RAV === 'Completed').length;
+      const complianceRate = totalStock > 0 ? Math.round(((nevdisCompleted + ravCompleted) / (totalStock * 2)) * 100) : 0;
+      const activeTF = tradeFinance.filter(tf => !tf.paid);
+      const tradeFinanceTotal = activeTF.reduce((sum, tf) => sum + tf.amount, 0);
+      const dueWithin30 = activeTF.filter(tf => { const days = calculateDaysUntilMaturity(tf.maturityDate); return days >= 0 && days <= 30; });
+      const hasDueSoon = dueWithin30.length > 0;
+      const sortedByMaturity = [...activeTF].sort((a, b) => calculateDaysUntilMaturity(a.maturityDate) - calculateDaysUntilMaturity(b.maturityDate));
+      const next5Due = sortedByMaturity.slice(0, 5);
+      const upcomingTF = dueWithin30.length >= next5Due.length ? dueWithin30 : next5Due;
+      const upcomingTFSorted = [...upcomingTF].sort((a, b) => calculateDaysUntilMaturity(a.maturityDate) - calculateDaysUntilMaturity(b.maturityDate));
+      const paidTF = tradeFinance.filter(tf => tf.paid);
+      const paidTotal = paidTF.reduce((sum, tf) => sum + tf.amount, 0);
+      const containersInTransit = CONTAINERS_SAMPLE.filter(c => c.status === 'In Transit').length;
+      const recentSales = inventoryData.filter(i => ['Collected', 'Paid in Full'].includes(i.Status)).slice(0, 5);
 
-      useEffect(() => {
-        const tradeFinance = data || TRADE_FINANCE_DEFAULT;
-        const sorted = tradeFinance.sort((a, b) => new Date(b.maturityDate) - new Date(a.maturityDate));
+      return (
+        <div className="space-y-8">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
+            <KPICard title="Total Stock" value={totalStock} icon={ICONS.package} color="text-blue-500" />
+            <KPICard title="In Stock" value={inStock} icon={ICONS.chart} color="text-green-500" />
+            <KPICard title="Sold/Collected" value={soldCollected} icon={ICONS.checkmark} color="text-amber-500" />
+            <KPICard title="Stock Value" value={formatCurrency(stockValue)} icon={ICONS.money} color="text-purple-500" />
+            <KPICard title="Compliance" value={complianceRate + '%'} icon={ICONS.check} color="text-emerald-500" />
+          </div>
 
-        const upcoming = sorted.filter(tf => !tf.paid);
-        const paid = sorted.filter(tf => tf.paid);
-
-        setUpcomingTFSorted(upcoming);
-        setPaidTF(paid);
-      }, [data]);
-
-      const togglePaid = (bankRef) => {
-        const tf = upcomingTFSorted.find(t => t.bankRef === bankRef);
-        if (tf) {
-          setPaidTF([...paidTF, { ...tf, paid: !tf.paid, paidDate: !tf.paid ? new Date().toLocaleDateString('en-AU', { day: '2-digit', month: '2-digit', year: 'numeric' }) : tf.paidDate, paymentRef: tf.bankRef }]);
-        }
-      };
-
-      const pageMap = {
-        dashboard: { component: DashboardPage, label: 'Dashboard', icon: 'box' },
-        inventory: { component: InventoryPage, label: 'Inventory', icon: 'box' },
-        containers: { component: ContainerPage, label: 'Containers', icon: 'box' },
-        freight: { component: FreightPage, label: 'Freight', icon: 'box' },
-        finance: { component: FinancePage, label: 'Finance', icon: 'dollar' }
-      };
-
-      const App = () => {
-        const [activePage, setActivePage] = useState('dashboard');
-        const [pageData, setPageData] = useState(null);
-        const [error, setError] = useState(null);
-
-        useEffect(() => {
-          const loadData = async () => {
-            try {
-              const dashboard = await fetchGoogleSheet('Dashboard');
-              const inventory = await fetchGoogleSheet('Inventory');
-              const containers = await fetchGoogleSheet('Containers');
-              const freight = await fetchGoogleSheet('Freight');
-              const finance = await fetchGoogleSheet('Trade Finance');
-
-              const pages = {
-                dashboard: dashboard ? dashboard.values : [],
-                inventory: inventory ? inventory.values : [],
-                containers: containers ? containers.values : [],
-                freight: freight ? freight.values : [],
-                finance: finance ? finance.values : []
-              };
-
-              setPageData(pages);
-            } catch (err) {
-              console.error('Error loading data:', err);
-              setError('Failed to load data. Please check your connection and refresh.');
-            }
-          };
-
-          loadData();
-        }, []);
-
-        if (error) {
-          return (
-            <div className="flex justify-center items-center min-h-screen">
-              <div className="text-center">
-                <h2 className="text-xl font-bold text-red-600">Error</h2>
-                <p className="text-gray-600 mt-4">{error}</p>
-              </div>
+          <div className={'banner-alert ' + (hasDueSoon ? 'banner-alert-red-amber' : 'banner-blue')}>
+            <div>
+              <p className="font-bold text-lg">Trade Finance Alert</p>
+              <p className="text-sm opacity-90 mt-2">
+                Total Outstanding: <span className="font-bold">{formatCurrency(tradeFinanceTotal)}</span> {ICONS.bullet} {dueWithin30.length} facilities due within 30 days{paidTF.length > 0 && <span> {ICONS.bullet} {paidTF.length} paid ({formatCurrency(paidTotal)})</span>}
+              </p>
             </div>
-          );
-        }
+            <a href="#trade-finance" className="underline hover:opacity-80 whitespace-nowrap ml-4" style={{ cursor: 'pointer' }}>
+              View Details {ICONS.arrow}
+            </a>
+          </div>
 
-        if (!pageData) {
-          return (
-            <div className="flex justify-center items-center min-h-screen">
-              <div className="text-center">
-                <p className="text-gray-600">Loading dashboard...</p>
-              </div>
+          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 overflow-x-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-bold text-gray-900">Upcoming Trade Finance</h3>
+              <span className="text-xs text-gray-500">{upcomingTFSorted.length} facilities shown (due within 30 days or next 5, whichever is greater)</span>
             </div>
-          );
-        }
+            <table className="status-table">
+              <thead>
+                <tr>
+                  <th>Bank Ref</th>
+                  <th>Product</th>
+                  <th>Counterparty</th>
+                  <th>Customer Ref</th>
+                  <th>Amount (AUD)</th>
+                  <th>Maturity Date</th>
+                  <th>Status</th>
+                  <th>Rate</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {upcomingTFSorted.map((item, idx) => {
+                  const days = calculateDaysUntilMaturity(item.maturityDate);
+                  return (
+                    <tr key={idx}>
+                      <td className="font-mono text-xs">{item.bankRef}</td>
+                      <td className="text-sm">{item.product}</td>
+                      <td className="text-sm">{item.counterparty}</td>
+                      <td className="text-xs">{item.customerRef || '-'}</td>
+                      <td className="font-semibold">{formatCurrency(item.amount)}</td>
+                      <td>{formatDate(item.maturityDate)}</td>
+                      <td><MaturityBadge days={days} /></td>
+                      <td>{item.interestRate}</td>
+                      <td><button onClick={() => togglePaid(item.bankRef)} className="px-2 py-1 text-xs rounded bg-green-100 text-green-700 hover:bg-green-200 transition whitespace-nowrap">Mark Paid</button></td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+              <tfoot>
+                <tr className="border-t-2 border-gray-300 bg-gray-50 font-bold">
+                  <td colSpan="4">TOTAL</td>
+                  <td>{formatCurrency(upcomingTFSorted.reduce((sum, tf) => sum + tf.amount, 0))}</td>
+                  <td colSpan="4"></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
 
-        return (
-          <div className="flex">
-            <div className="sidebar">
-              {Object.entries(pageMap).map(([key, pageInfo]) => (
-                <div key={key} className="nav-item" onClick={() => setActivePage(key)}>
-                  <span>{pageInfo.icon}</span>
-                  <span>{pageInfo.label}</span>
+          {paidTF.length > 0 && (
+          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 overflow-x-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-bold text-gray-900">Paid Facilities</h3>
+              <span className="text-xs text-gray-500">{paidTF.length} paid {ICONS.bullet} {formatCurrency(paidTotal)}</span>
+            </div>
+            <table className="status-table">
+              <thead>
+                <tr>
+                  <th>Bank Ref</th>
+                  <th>Product</th>
+                  <th>Counterparty</th>
+                  <th>Amount (AUD)</th>
+                  <th>Maturity Date</th>
+                  <th>Paid Date</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {paidTF.map((item, idx) => (
+                  <tr key={idx} className="opacity-60">
+                    <td className="font-mono text-xs">{item.bankRef}</td>
+                    <td className="text-sm">{item.product}</td>
+                    <td className="text-sm">{item.counterparty}</td>
+                    <td className="font-semibold line-through">{formatCurrency(item.amount)}</td>
+                    <td>{formatDate(item.maturityDate)}</td>
+                    <td><span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">Paid {item.paidDate || ''}</span></td>
+                    <td><button onClick={() => togglePaid(item.bankRef)} className="px-2 py-1 text-xs rounded bg-yellow-100 text-yellow-700 hover:bg-yellow-200 transition whitespace-nowrap">Undo</button></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          )}
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+              <h3 className="text-lg font-bold text-gray-900 mb-4">Stock by Model</h3>
+              <StockByModelChart data={inventoryData} />
+            </div>
+            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+              <h3 className="text-lg font-bold text-gray-900 mb-4">Stock by Status</h3>
+              <StockByStatusChart data={inventoryData} />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+              <h3 className="text-lg font-bold text-gray-900 mb-4">Recent Sales</h3>
+              <table className="status-table">
+                <thead>
+                  <tr>
+                    <th>VIN</th>
+                    <th>Model</th>
+                    <th>Status</th>
+                    <th>Customer</th>
+                    <th>Sale Price</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {recentSales.map((item, idx) => (
+                    <tr key={idx}>
+                      <td className="font-mono text-xs">{item.VIN || '-'}</td>
+                      <td>{item.Model || '-'}</td>
+                      <td><StatusBadge status={item.Status} /></td>
+                      <td>{item['Assigned Customer'] || '-'}</td>
+                      <td>{formatCurrency(parseFloat(item['Sold Price (inc. Gst)']) || 0)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+              <h3 className="text-lg font-bold text-gray-900 mb-4">Warehouse Distribution</h3>
+              <WarehouseChart data={inventoryData} />
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+            <h3 className="text-lg font-bold text-gray-900 mb-4">Containers In Transit</h3>
+            <p className="text-gray-600 text-sm mb-4">{containersInTransit} containers currently shipping</p>
+            <div className="space-y-4">
+              {CONTAINERS_SAMPLE.filter(c => c.status === 'In Transit').map((container, idx) => (
+                <div key={idx} className="border-l-4 border-blue-500 pl-4 py-2">
+                  <div className="flex justify-between items-start mb-2">
+                    <div>
+                      <p className="font-bold text-gray-900">{container.vessel}</p>
+                      <p className="text-sm text-gray-600">{container.container}</p>
+                    </div>
+                    <span className="text-xs text-gray-500">ETA: {container.eta}</span>
+                  </div>
+                  <div className="progress-bar">
+                    <div className="progress-fill" style={{ width: container.progress + '%' }}></div>
+                  </div>
                 </div>
               ))}
             </div>
-            <div className="main-content">
-              <div>
-                {pageMap[activePage] && (
-                  pageInfo.component({pageData})
-                )}
-              </div>
-            </div>
+            <a href="#containers" className="text-blue-600 hover:text-blue-700 text-sm mt-4 inline-block" style={{ cursor: 'pointer' }}>
+              View All {ICONS.arrow}
+            </a>
           </div>
-        );
-      };
-
-      return (
-        <div>
-          {/* Finance content here */}
         </div>
       );
     };
 
-    // Format currency function
-    const formatCurrency = (value) => {
-      return new Intl.NumberFormat('en-AU', { style: 'currency', currency: 'AUD' }).format(value);
+    const InventoryPage = ({ data }) => {
+      const [search, setSearch] = useState('');
+      const [filters, setFilters] = useState({ status: '', warehouse: '', model: '', colour: '' });
+
+      const statuses = [...new Set(data.map(i => i.Status).filter(Boolean))];
+      const warehouses = [...new Set(data.map(i => i.Warehouse).filter(Boolean))];
+      const models = [...new Set(data.map(i => i.Model).filter(Boolean))];
+      const colours = [...new Set(data.map(i => i.Colour).filter(Boolean))];
+
+      let filtered = data.filter(item => {
+        const searchLower = search.toLowerCase();
+        const matchesSearch = !search || (item.VIN && item.VIN.toLowerCase().includes(searchLower)) || (item.Model && item.Model.toLowerCase().includes(searchLower)) || (item['Assigned Customer'] && item['Assigned Customer'].toLowerCase().includes(searchLower));
+        const matchesStatus = !filters.status || item.Status === filters.status;
+        const matchesWarehouse = !filters.warehouse || item.Warehouse === filters.warehouse;
+        const matchesModel = !filters.model || item.Model === filters.model;
+        const matchesColour = !filters.colour || item.Colour === filters.colour;
+        return matchesSearch && matchesStatus && matchesWarehouse && matchesModel && matchesColour;
+      });
+
+      const clearFilters = () => {
+        setSearch('');
+        setFilters({ status: '', warehouse: '', model: '', colour: '' });
+      };
+
+      return (
+        <div className="space-y-6">
+          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+            <h3 className="text-lg font-bold text-gray-900 mb-4">Search & Filter</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-4">
+              <input type="text" placeholder="Search VIN, Model, Customer..." value={search} onChange={(e) => setSearch(e.target.value)} className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              <select value={filters.status} onChange={(e) => setFilters({...filters, status: e.target.value})} className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="">All Status</option>
+                {statuses.map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+              <select value={filters.warehouse} onChange={(e) => setFilters({...filters, warehouse: e.target.value})} className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="">All Warehouse</option>
+                {warehouses.map(w => <option key={w} value={w}>{w}</option>)}
+              </select>
+              <select value={filters.model} onChange={(e) => setFilters({...filters, model: e.target.value})} className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="">All Models</option>
+                {models.map(m => <option key={m} value={m}>{m}</option>)}
+              </select>
+              <button onClick={clearFilters} className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">Clear</button>
+            </div>
+            <p className="text-sm text-gray-600">{filtered.length} records</p>
+          </div>
+
+          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 overflow-x-auto">
+            <table className="status-table">
+              <thead>
+                <tr>
+                  <th>VIN</th>
+                  <th>Model</th>
+                  <th>Colour</th>
+                  <th>Warehouse</th>
+                  <th>NEVDIS</th>
+                  <th>RAV</th>
+                  <th>Status</th>
+                  <th>Customer</th>
+                  <th>Invoice</th>
+                  <th>Sale Price</th>
+                  <th>Collection</th>
+                  <th>Notes</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((item, idx) => (
+                  <tr key={idx}>
+                    <td className="font-mono text-xs">{item.VIN || '-'}</td>
+                    <td>{item.Model || '-'}</td>
+                    <td>{item.Colour || '-'}</td>
+                    <td><WarehouseBadge warehouse={item.Warehouse} /></td>
+                    <td><ComplianceBadge status={item.NEVDIS} /></td>
+                    <td><ComplianceBadge status={item.RAV} /></td>
+                    <td><StatusBadge status={item.Status} /></td>
+                    <td className="text-sm">{item['Assigned Customer'] || '-'}</td>
+                    <td className="font-mono text-xs">{item['Invoice#'] || '-'}</td>
+                    <td>{formatCurrency(parseFloat(item['Sold Price (inc. Gst)']) || 0)}</td>
+                    <td className="text-sm">{item['In Person or Delivery Collection'] || '-'}</td>
+                    <td className="text-sm text-gray-600">{item.Notes || '-'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      );
     };
 
-    // Placeholder components
-    const DashboardPage = ({ data }) => <div className="coming-soon"><p>Dashboard</p></div>;
-    const InventoryPage = ({ data }) => <div className="coming-soon"><p>Inventory</p></div>;
-    const ContainerPage = ({ data }) => <div className="coming-soon"><p>Containers</p></div>;
-    const FreightPage = ({ data }) => <div className="coming-soon"><p>Freight</p></div>;
+    const ContainersPage = ({ containerArrivalsData }) => {
+      return (
+        <div className="space-y-6">
+          <div>
+            <h3 className="text-lg font-bold text-gray-900 mb-4">Sample Container Tracking</h3>
+            <div className="space-y-4">
+              {CONTAINERS_SAMPLE.map((container, idx) => (
+                <div key={idx} className="container-card">
+                  <div className="flex justify-between items-start mb-4">
+                    <div>
+                      <p className="font-bold text-lg text-gray-900">{container.vessel}</p>
+                      <p className="text-sm text-gray-600 font-mono">{container.container}</p>
+                    </div>
+                    <div className="text-right">
+                      <ContainerStatusBadge status={container.status} />
+                      <p className="text-xs text-gray-500 mt-2">{container.supplier}</p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                      <p className="text-xs text-gray-500 uppercase">Route</p>
+                      <p className="text-sm font-semibold text-gray-900">{container.origin} {ICONS.arrow} {container.destination}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500 uppercase">Dates</p>
+                      <p className="text-sm font-semibold text-gray-900">ETD: {container.etd} | ETA: {container.eta}</p>
+                    </div>
+                  </div>
+                  <div className="mb-2">
+                    <p className="text-xs text-gray-600 mb-2">Models: {container.models}</p>
+                  </div>
+                  <div className="progress-bar">
+                    <div className="progress-fill" style={{ width: container.progress + '%' }}></div>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">{container.progress}% Complete</p>
+                </div>
+              ))}
+            </div>
+          </div>
 
+          {containerArrivalsData.length > 0 && (
+            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+              <h3 className="text-lg font-bold text-gray-900 mb-4">Sheet Data - Container Arrivals</h3>
+              <table className="status-table">
+                <thead>
+                  <tr>
+                    <th>Pivot Order</th>
+                    <th>Container #</th>
+                    <th>Vessel</th>
+                    <th>ETA</th>
+                    <th>Status</th>
+                    <th>Models</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {containerArrivalsData.map((item, idx) => (
+                    <tr key={idx}>
+                      <td>{item['Pivot Order'] || '-'}</td>
+                      <td className="font-mono">{item['Container #'] || '-'}</td>
+                      <td>{item.Vessel || '-'}</td>
+                      <td>{formatDate(item['ETA Arrival Date'])}</td>
+                      <td>{item.Status || '-'}</td>
+                      <td className="text-sm">{item['Models In Container'] || '-'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      );
+    };
+
+    const TradeFinancePage = ({ tradeFinance, togglePaid }) => {
+      const activeTF = tradeFinance.filter(tf => !tf.paid);
+      const paidTF = tradeFinance.filter(tf => tf.paid);
+      const tradeFinanceTotal = activeTF.reduce((sum, tf) => sum + tf.amount, 0);
+      const importFinanceTotal = activeTF.filter(tf => tf.product === 'Import Finance').reduce((sum, tf) => sum + tf.amount, 0);
+      const ttRefinanceTotal = activeTF.filter(tf => tf.product === 'TT Refinance').reduce((sum, tf) => sum + tf.amount, 0);
+      const sorted = [...activeTF].sort((a, b) => calculateDaysUntilMaturity(a.maturityDate) - calculateDaysUntilMaturity(b.maturityDate));
+      const nextMaturity = sorted[0];
+      const paidTotal = paidTF.reduce((sum, tf) => sum + tf.amount, 0);
+
+      return (
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
+            <KPICard title="Total Outstanding" value={formatCurrency(tradeFinanceTotal)} icon={ICONS.money} color="text-red-500" />
+            <KPICard title="Import Finance" value={formatCurrency(importFinanceTotal)} icon={ICONS.inbox} color="text-blue-500" />
+            <KPICard title="TT Refinance" value={formatCurrency(ttRefinanceTotal)} icon={ICONS.chart} color="text-purple-500" />
+            <KPICard title="Next Maturity" value={nextMaturity ? formatDate(nextMaturity.maturityDate) : 'N/A'} icon={ICONS.calendar} color="text-amber-500" />
+            <KPICard title="Paid" value={formatCurrency(paidTotal)} icon={ICONS.check} color="text-green-500" />
+          </div>
+
+          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 overflow-x-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-bold text-gray-900">Outstanding Facilities</h3>
+              <span className="text-xs text-gray-500">{activeTF.length} active {ICONS.bullet} {formatCurrency(tradeFinanceTotal)}</span>
+            </div>
+            <table className="status-table">
+              <thead>
+                <tr>
+                  <th>Bank Reference</th>
+                  <th>Product</th>
+                  <th>Counterparty</th>
+                  <th>Customer Ref</th>
+                  <th>Amount (AUD)</th>
+                  <th>Maturity Date</th>
+                  <th>Status</th>
+                  <th>Interest Rate</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sorted.map((item, idx) => {
+                  const days = calculateDaysUntilMaturity(item.maturityDate);
+                  return (
+                    <tr key={idx}>
+                      <td className="font-mono text-xs">{item.bankRef}</td>
+                      <td className="text-sm">{item.product}</td>
+                      <td className="text-sm">{item.counterparty}</td>
+                      <td className="text-xs">{item.customerRef || '-'}</td>
+                      <td className="font-semibold">{formatCurrency(item.amount)}</td>
+                      <td>{formatDate(item.maturityDate)}</td>
+                      <td><MaturityBadge days={days} /></td>
+                      <td>{item.interestRate}</td>
+                      <td><button onClick={() => togglePaid(item.bankRef)} className="px-3 py-1.5 text-xs rounded-lg bg-green-100 text-green-700 hover:bg-green-200 transition font-medium whitespace-nowrap">Mark Paid</button></td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+              <tfoot>
+                <tr className="border-t-2 border-gray-300 bg-gray-50 font-bold">
+                  <td colSpan="4">TOTAL OUTSTANDING</td>
+                  <td>{formatCurrency(tradeFinanceTotal)}</td>
+                  <td colSpan="4"></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+
+          {paidTF.length > 0 && (
+          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 overflow-x-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-bold text-green-700">Paid Facilities</h3>
+              <span className="text-xs text-gray-500">{paidTF.length} paid {ICONS.bullet} {formatCurrency(paidTotal)}</span>
+            </div>
+            <table className="status-table">
+              <thead>
+                <tr>
+                  <th>Bank Reference</th>
+                  <th>Product</th>
+                  <th>Counterparty</th>
+                  <th>Customer Ref</th>
+                  <th>Amount (AUD)</th>
+                  <th>Maturity Date</th>
+                  <th>Paid Date</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {paidTF.map((item, idx) => (
+                  <tr key={idx} className="opacity-60">
+                    <td className="font-mono text-xs">{item.bankRef}</td>
+                    <td className="text-sm">{item.product}</td>
+                    <td className="text-sm">{item.counterparty}</td>
+                    <td className="text-xs">{item.customerRef || '-'}</td>
+                    <td className="font-semibold line-through">{formatCurrency(item.amount)}</td>
+                    <td>{formatDate(item.maturityDate)}</td>
+                    <td><span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">Paid {item.paidDate || ''}</span></td>
+                    <td><button onClick={() => togglePaid(item.bankRef)} className="px-3 py-1.5 text-xs rounded-lg bg-yellow-100 text-yellow-700 hover:bg-yellow-200 transition font-medium whitespace-nowrap">Undo</button></td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr className="border-t-2 border-gray-300 bg-gray-50 font-bold">
+                  <td colSpan="4">TOTAL PAID</td>
+                  <td className="line-through">{formatCurrency(paidTotal)}</td>
+                  <td colSpan="3"></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+          )}
+
+          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 overflow-x-auto">
+            <h3 className="text-lg font-bold text-gray-900 mb-4">Full Details (All Facilities)</h3>
+            <table className="status-table">
+              <thead>
+                <tr>
+                  <th>Bank Ref</th>
+                  <th>Counterparty</th>
+                  <th>Customer Ref</th>
+                  <th>Invoice Date</th>
+                  <th>Establish Date</th>
+                  <th>Maturity Date</th>
+                  <th>Currency</th>
+                  <th>Amount</th>
+                  <th>Rate</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {tradeFinance.map((item, idx) => (
+                  <tr key={idx} className={item.paid ? 'opacity-50' : ''}>
+                    <td className="font-mono text-xs">{item.bankRef}</td>
+                    <td className="text-sm">{item.counterparty}</td>
+                    <td className="text-xs">{item.customerRef || '-'}</td>
+                    <td className="text-sm">{formatDate(item.invoiceDate)}</td>
+                    <td className="text-sm">{formatDate(item.establishDate)}</td>
+                    <td className="text-sm">{formatDate(item.maturityDate)}</td>
+                    <td>{item.currency}</td>
+                    <td className={'font-semibold' + (item.paid ? ' line-through' : '')}>{formatCurrency(item.amount)}</td>
+                    <td>{item.interestRate}</td>
+                    <td>{item.paid ? <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">Paid</span> : <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">Active</span>}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      );
+    };
+
+    const PricingPage = ({ data }) => {
+      if (!data || data.length === 0) return <div className="text-gray-500">Loading pricing data...</div>;
+
+      const models = data.length;
+      const avgCost = data.reduce((sum, p) => sum + (parseFloat(p['Cost Price (ex.gst)']) || 0), 0) / models;
+      const avgRRP = data.reduce((sum, p) => sum + (parseFloat(p['RRP (inc. gst)']) || 0), 0) / models;
+      const avgMargin = avgRRP - avgCost;
+      const avgMarginPercent = avgCost > 0 ? (avgMargin / avgCost * 100) : 0;
+      const totalCost = data.reduce((sum, p) => sum + (parseFloat(p['Cost Price (ex.gst)']) || 0), 0);
+      const totalRRP = data.reduce((sum, p) => sum + (parseFloat(p['RRP (inc. gst)']) || 0), 0);
+
+      return (
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <KPICard title="Models" value={models} icon={ICONS.package} color="text-blue-500" />
+            <KPICard title="Avg Cost" value={formatCurrency(avgCost)} icon={ICONS.dollar} color="text-gray-500" />
+            <KPICard title="Avg RRP" value={formatCurrency(avgRRP)} icon={ICONS.dollarSign} color="text-green-500" />
+            <KPICard title="Avg Margin %" value={avgMarginPercent.toFixed(1) + '%'} icon={ICONS.chartUp} color="text-purple-500" />
+          </div>
+
+          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 overflow-x-auto">
+            <table className="status-table">
+              <thead>
+                <tr>
+                  <th>Model</th>
+                  <th>Cost (ex GST)</th>
+                  <th>RRP (inc GST)</th>
+                  <th>Margin ($)</th>
+                  <th>Margin (%)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.map((item, idx) => {
+                  const cost = parseFloat(item['Cost Price (ex.gst)']) || 0;
+                  const rrp = parseFloat(item['RRP (inc. gst)']) || 0;
+                  const margin = rrp - cost;
+                  const marginPercent = cost > 0 ? (margin / cost * 100) : 0;
+                  return (
+                    <tr key={idx}>
+                      <td className="font-semibold">{item.Model}</td>
+                      <td>{formatCurrency(cost)}</td>
+                      <td>{formatCurrency(rrp)}</td>
+                      <td>{formatCurrency(margin)}</td>
+                      <td className="font-semibold text-green-600">{marginPercent.toFixed(1)}%</td>
+                    </tr>
+                  );
+                })}
+                <tr className="border-t-2 border-gray-300 bg-gray-50 font-bold">
+                  <td>TOTALS</td>
+                  <td>{formatCurrency(totalCost)}</td>
+                  <td>{formatCurrency(totalRRP)}</td>
+                  <td>{formatCurrency(totalRRP - totalCost)}</td>
+                  <td className="text-green-600">{((totalRRP - totalCost) / totalCost * 100).toFixed(1)}%</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      );
+    };
+
+    const CRMPage = () => (
+      <div className="coming-soon">
+        <div className="coming-soon-icon">{String.fromCodePoint(0x1F680)}</div>
+        <h2 className="text-3xl font-bold text-gray-900">Coming Soon</h2>
+        <p className="text-xl text-gray-600 mt-4">CRM module is under development</p>
+        <div className="mt-8 text-left">
+          <p className="text-gray-700 font-semibold mb-4">Planned Features:</p>
+          <ul className="space-y-2 text-gray-600">
+            <li>{ICONS.checkmark} Lead Management</li>
+            <li>{ICONS.checkmark} Sales Pipeline</li>
+            <li>{ICONS.checkmark} Customer Database</li>
+            <li>{ICONS.checkmark} Follow-up Automation</li>
+          </ul>
+        </div>
+      </div>
+    );
+
+    const SettingsPage = () => (
+      <div className="space-y-6">
+        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+          <h3 className="text-lg font-bold text-gray-900 mb-4">Data Source Information</h3>
+          <div className="space-y-4">
+            <div>
+              <p className="text-sm text-gray-600 font-semibold">Sheet ID</p>
+              <p className="font-mono text-sm text-gray-800 break-all">{SHEET_ID}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-600 font-semibold">Tabs</p>
+              <ul className="text-sm text-gray-800 space-y-1">
+                <li>{ICONS.bullet} NT Trailers Trailers (main stock)</li>
+                <li>{ICONS.bullet} Container Arrivals (shipping)</li>
+                <li>{ICONS.bullet} Pricing (model pricing)</li>
+              </ul>
+            </div>
+            <div>
+              <p className="text-sm text-gray-600 font-semibold">Last Refresh</p>
+              <p className="text-sm text-gray-800">Use the refresh button in the top bar to fetch latest data</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+          <h3 className="text-lg font-bold text-gray-900 mb-4">Version Information</h3>
+          <div className="space-y-2">
+            <p className="text-sm text-gray-800"><span className="font-semibold">Version:</span> 1.1</p>
+            <p className="text-sm text-gray-800"><span className="font-semibold">Status:</span> Live Sheet Data</p>
+          </div>
+        </div>
+      </div>
+    );
+
+    // Main App Component
     const App = () => {
-      const [activePage, setActivePage] = useState('dashboard');
-      const [pageData, setPageData] = useState(null);
-      const [error, setError] = useState(null);
+      const [currentPage, setCurrentPage] = useState('dashboard');
+      const [inventoryData, setInventoryData] = useState([]);
+      const [containerArrivalsData, setContainerArrivalsData] = useState([]);
+      const [pricingData, setPricingData] = useState([]);
+      const [lastUpdated, setLastUpdated] = useState(new Date());
+      const [loading, setLoading] = useState(true);
+      const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+      const [tradeFinance, setTradeFinance] = useState(loadTradeFinance());
+
+      const togglePaid = (bankRef) => {
+        setTradeFinance(prev => {
+          const updated = prev.map(tf => tf.bankRef === bankRef ? { ...tf, paid: !tf.paid, paidDate: !tf.paid ? new Date().toLocaleDateString('en-AU', { day: '2-digit', month: '2-digit', year: 'numeric' }) : null } : tf);
+          saveTradeFinancePaidStatus(updated);
+          return updated;
+        });
+      };
+
+      const loadData = async () => {
+        setLoading(true);
+        try {
+          const [inventory, containers, pricing] = await Promise.all([
+            fetchGoogleSheet('NT Trailers Trailers'),
+            fetchGoogleSheet('Container Arrivals'),
+            fetchGoogleSheet('Pricing'),
+          ]);
+          setInventoryData(inventory);
+          setContainerArrivalsData(containers);
+          setPricingData(pricing);
+          setLastUpdated(new Date());
+        } catch (e) {
+          console.error('Data load error:', e);
+        }
+        setLoading(false);
+      };
 
       useEffect(() => {
-        const loadData = async () => {
-          try {
-            const dashboard = await fetchGoogleSheet('Dashboard');
-            const inventory = await fetchGoogleSheet('Inventory');
-            const containers = await fetchGoogleSheet('Containers');
-            const freight = await fetchGoogleSheet('Freight');
-            const finance = await fetchGoogleSheet('Trade Finance');
-
-            const pages = {
-              dashboard: dashboard ? dashboard.values : [],
-              inventory: inventory ? inventory.values : [],
-              containers: containers ? containers.values : [],
-              freight: freight ? freight.values : [],
-              finance: finance ? finance.values : []
-            };
-
-            setPageData(pages);
-          } catch (err) {
-            console.error('Error loading data:', err);
-            setError('Failed to load data. Please check your connection and refresh.');
-          }
-        };
-
         loadData();
       }, []);
 
-      if (error) {
-        return (
-          <div className="flex justify-center items-center min-h-screen">
-            <div className="text-center">
-              <h2 className="text-xl font-bold text-red-600">Error</h2>
-              <p className="text-gray-600 mt-4">{error}</p>
-            </div>
-          </div>
-        );
-      }
+      useEffect(() => {
+        const hash = window.location.hash.slice(1) || 'dashboard';
+        setCurrentPage(hash);
+      }, []);
 
-      if (!pageData) {
-        return (
-          <div className="flex justify-center items-center min-h-screen">
-            <div className="text-center">
-              <p className="text-gray-600">Loading dashboard...</p>
-            </div>
-          </div>
-        );
-      }
+      useEffect(() => {
+        window.location.hash = currentPage;
+      }, [currentPage]);
+
+      const handleNavClick = (page) => {
+        setCurrentPage(page);
+        setMobileMenuOpen(false);
+      };
+
+      const pages = {
+        dashboard: { title: 'Dashboard', component: <DashboardPage inventoryData={inventoryData} containerArrivalsData={containerArrivalsData} pricingData={pricingData} lastUpdated={lastUpdated} tradeFinance={tradeFinance} togglePaid={togglePaid} /> },
+        inventory: { title: 'Inventory', component: <InventoryPage data={inventoryData} /> },
+        containers: { title: 'Containers', component: <ContainersPage containerArrivalsData={containerArrivalsData} /> },
+        'trade-finance': { title: 'Trade Finance', component: <TradeFinancePage tradeFinance={tradeFinance} togglePaid={togglePaid} /> },
+        pricing: { title: 'Pricing', component: <PricingPage data={pricingData} /> },
+        crm: { title: 'CRM', component: <CRMPage /> },
+        settings: { title: 'Settings', component: <SettingsPage /> },
+      };
+
+      const pageInfo = pages[currentPage] || pages.dashboard;
 
       return (
-        <div className="flex">
-          <div className="sidebar">
-            {Object.entries(pageMap).map(([key, pageInfo]) => (
-              <div key={key} className="nav-item" onClick={() => setActivePage(key)}>
-                <span>{pageInfo.icon}</span>
-                <span>{pageInfo.label}</span>
+        <div className="flex h-screen bg-gray-50">
+          <div className={'sidebar ' + (mobileMenuOpen ? 'open' : '')}>
+            <div className="p-6 border-b border-slate-700">
+              <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-4 text-white mb-4">
+                <p className="text-2xl font-bold">NT</p>
+                <p className="text-xs opacity-90 mt-1">Master Control</p>
               </div>
-            ))}
+            </div>
+
+            <nav className="flex-1 overflow-y-auto py-6 px-3">
+              {[
+                { id: 'dashboard', label: 'Dashboard', icon: ICONS.chart },
+                { id: 'inventory', label: 'Inventory', icon: ICONS.package },
+                { id: 'containers', label: 'Containers', icon: ICONS.ship },
+                { id: 'trade-finance', label: 'Trade Finance', icon: ICONS.money },
+                { id: 'pricing', label: 'Pricing', icon: ICONS.dollarSign },
+                { id: 'crm', label: 'CRM', icon: ICONS.people, badge: 'Coming Soon' },
+                { id: 'settings', label: 'Settings', icon: ICONS.gear },
+              ].map(item => (
+                <div key={item.id}>
+                  <div
+                    onClick={() => handleNavClick(item.id)}
+                    className={'nav-item ' + (currentPage === item.id ? 'active' : '')}
+                  >
+                    <span>{item.icon}</span>
+                    <span>{item.label}</span>
+                    {item.badge && <span className="ml-auto text-xs bg-yellow-400 text-yellow-900 px-2 py-1 rounded">{item.badge}</span>}
+                  </div>
+                </div>
+              ))}
+            </nav>
+
+            <div className="p-6 border-t border-slate-700 text-center">
+              <p className="text-xs text-slate-400">v1.1 - Live Sheet Data</p>
+            </div>
           </div>
-          <div className="main-content">
-            <div>
-              {pageMap[activePage] && (
-                pageInfo.component({pageData})
+
+          <div className="main-content flex-1 overflow-auto">
+            <div className="bg-white border-b border-gray-200 sticky top-0 z-30">
+              <div className="px-8 py-4 flex justify-between items-center">
+                <div className="flex items-center gap-4">
+                  <button
+                    onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                    className="mobile-menu-toggle text-2xl md:hidden"
+                  >
+                    {'\u2630'}
+                  </button>
+                  <div>
+                    <h1 className="text-2xl font-bold text-gray-900">{pageInfo.title}</h1>
+                    <p className="text-xs text-gray-500 mt-1">Last updated: {lastUpdated.toLocaleTimeString('en-AU')}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-4">
+                  <button
+                    onClick={loadData}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                  >
+                    {ICONS.refresh} Refresh
+                  </button>
+                  <div className=       setLastUpdated(new Date());
+        } catch (e) {
+          console.error('Data load error:', e);
+        }
+        setLoading(false);
+      };
+
+      useEffect(() => {
+        loadData();
+      }, []);
+
+      useEffect(() => {
+        const hash = window.location.hash.slice(1) || 'dashboard';
+        setCurrentPage(hash);
+      }, []);
+
+      useEffect(() => {
+        window.location.hash = currentPage;
+      }, [currentPage]);
+
+      const handleNavClick = (page) => {
+        setCurrentPage(page);
+        setMobileMenuOpen(false);
+      };
+
+      const pages = {
+        dashboard: { title: 'Dashboard', component: <DashboardPage inventoryData={inventoryData} containerArrivalsData={containerArrivalsData} pricingData={pricingData} lastUpdated={lastUpdated} tradeFinance={tradeFinance} togglePaid={togglePaid} /> },
+        inventory: { title: 'Inventory', component: <InventoryPage data={inventoryData} /> },
+        containers: { title: 'Containers', component: <ContainersPage containerArrivalsData={containerArrivalsData} /> },
+        'trade-finance': { title: 'Trade Finance', component: <TradeFinancePage tradeFinance={tradeFinance} togglePaid={togglePaid} /> },
+        pricing: { title: 'Pricing', component: <PricingPage data={pricingData} /> },
+        crm: { title: 'CRM', component: <CRMPage /> },
+        settings: { title: 'Settings', component: <SettingsPage /> },
+      };
+
+      const pageInfo = pages[currentPage] || pages.dashboard;
+
+      return (
+        <div className="flex h-screen bg-gray-50">
+          <div className={'sidebar ' + (mobileMenuOpen ? 'open' : '')}>
+            <div className="p-6 border-b border-slate-700">
+              <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-4 text-white mb-4">
+                <p className="text-2xl font-bold">NT</p>
+                <p className="text-xs opacity-90 mt-1">Master Control</p>
+              </div>
+            </div>
+
+            <nav className="flex-1 overflow-y-auto py-6 px-3">
+              {[
+                { id: 'dashboard', label: 'Dashboard', icon: ICONS.chart },
+                { id: 'inventory', label: 'Inventory', icon: ICONS.package },
+                { id: 'containers', label: 'Containers', icon: ICONS.ship },
+                { id: 'trade-finance', label: 'Trade Finance', icon: ICONS.money },
+                { id: 'pricing', label: 'Pricing', icon: ICONS.dollarSign },
+                { id: 'crm', label: 'CRM', icon: ICONS.people, badge: 'Coming Soon' },
+                { id: 'settings', label: 'Settings', icon: ICONS.gear },
+              ].map(item => (
+                <div key={item.id}>
+                  <div
+                    onClick={() => handleNavClick(item.id)}
+                    className={'nav-item ' + (currentPage === item.id ? 'active' : '')}
+                  >
+                    <span>{item.icon}</span>
+                    <span>{item.label}</span>
+                    {item.badge && <span className="ml-auto text-xs bg-yellow-400 text-yellow-900 px-2 py-1 rounded">{item.badge}</span>}
+                  </div>
+                </div>
+              ))}
+            </nav>
+
+            <div className="p-6 border-t border-slate-700 text-center">
+              <p className="text-xs text-slate-400">v1.1 - Live Sheet Data</p>
+            </div>
+          </div>
+
+          <div className="main-content flex-1 overflow-auto">
+            <div className="bg-white border-b border-gray-200 sticky top-0 z-30">
+              <div className="px-8 py-4 flex justify-between items-center">
+                <div className="flex items-center gap-4">
+                  <button
+                    onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                    className="mobile-menu-toggle text-2xl md:hidden"
+                  >
+                    {'\u2630'}
+                  </button>
+                  <div>
+                    <h1 className="text-2xl font-bold text-gray-900">{pageInfo.title}</h1>
+                    <p className="text-xs text-gray-500 mt-1">Last updated: {lastUpdated.toLocaleTimeString('en-AU')}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-4">
+                  <button
+                    onClick={loadData}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                  >
+                    {ICONS.refresh} Refresh
+                  </button>
+                  <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center font-bold text-gray-700">
+                    L
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900">Luke</p>
+                    <p className="text-xs text-gray-500">Admin</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-8">
+              {loading ? (
+                <div className="flex items-center justify-center h-96">
+                  <div className="text-center">
+                    <p className="text-gray-500 text-lg">Loading data...</p>
+                  </div>
+                </div>
+              ) : (
+                pageInfo.component
               )}
             </div>
           </div>
@@ -571,17 +1415,8 @@
       );
     };
 
-    const pageMap = {
-      dashboard: { component: DashboardPage, label: 'Dashboard', icon: '📦' },
-      inventory: { component: InventoryPage, label: 'Inventory', icon: '📤' },
-      containers: { component: ContainerPage, label: 'Containers', icon: '📄' },
-      freight: { component: FreightPage, label: 'Freight', icon: '🚢' },
-      finance: { component: FinancePage, label: 'Finance', icon: '💷' }
-    };
-
-    reactDOM.createRoot(document.getElementById('root')).render(
-        <App />
-    );
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
   </script>
 </body>
 </html>
