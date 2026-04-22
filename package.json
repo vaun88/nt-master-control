@@ -1,0 +1,9 @@
+{
+  "name": "nt-master-control",
+  "version": "2.0.0",
+  "description": "NT Trailers Master Control Dashboard with CRM and Meta Integration",
+  "private": true,
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.0"
+  }
+}
