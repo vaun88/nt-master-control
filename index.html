@@ -325,6 +325,31 @@
       transform: translateY(-1px);
     }
 
+    .crm-lead-card.dragging {
+      opacity: 0.4;
+      transform: rotate(2deg) scale(0.95);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+    }
+
+    .crm-column.drag-over {
+      background: #eef2ff;
+      outline: 2px dashed #6366f1;
+      outline-offset: -2px;
+      transition: background 0.2s, outline 0.2s;
+    }
+
+    .crm-column .crm-drop-placeholder {
+      border: 2px dashed #a5b4fc;
+      border-radius: 10px;
+      padding: 20px;
+      text-align: center;
+      color: #818cf8;
+      font-size: 12px;
+      font-weight: 600;
+      margin-bottom: 10px;
+      background: #eef2ff;
+    }
+
     .crm-lead-name {
       font-weight: 600;
       font-size: 14px;
@@ -994,88 +1019,93 @@
       return <span className="badge" style={{ backgroundColor: stage.color + '20', color: stage.color }}>{stage.label}</span>;
     };
 
-    const LeadCard = ({ lead, onClick }) => (
-      <div className="crm-lead-card" onClick={() => onClick(lead)}>
-        <div className="crm-lead-name">{lead.name}</div>
-        <div className="crm-lead-company">{lead.company || 'No company'}</div>
-        {lead.trailer_interest && <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '6px' }}>{ICONS.truck} {lead.trailer_interest}</div>}
-        <div className="crm-lead-meta">
-          <span className="crm-lead-value">{lead.deal_value ? formatCurrency(lead.deal_value) : '-'}</span>
-          <SourceBadge source={lead.source} />
-        </div>
-        {lead.source === 'Meta Ads' && lead.campaign_name && <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '6px' }}>{ICONS.megaphone} {lead.campaign_name}</div>}
-      </div>
-    );
+    const LeadCard = ({ lead, onClick }) => {
+        const handleDragStart = (e) => {
+          e.dataTransfer.setData('text/plain', lead.id);
+          e.dataTransfer.effectAllowed = 'move';
+          e.currentTarget.classList.add('dragging');
+        };
+        const handleDragEnd = (e) => {
+          e.currentTarget.classList.remove('dragging');
+        };
+        return (
+          <div
+            className="crm-lead-card"
+            draggable="true"
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+            onClick={() => onClick(lead)}
+          >
+            <div className="crm-lead-name">{lead.name}</div>
+            <div className="crm-lead-company">{lead.company || 'No company'}</div>
+            {lead.trailer_interest && <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '6px' }}>{ICONS.truck} {lead.trailer_interest}</div>}
+            <div className="crm-lead-meta">
+              <span className="crm-lead-value">{lead.deal_value ? formatCurrency(lead.deal_value) : '-'}</span>
+              <SourceBadge source={lead.source} />
+            </div>
+            {lead.source === 'Meta Ads' && lead.campaign_name && <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '6px' }}>{ICONS.megaphone} {lead.campaign_name}</div>}
+          </div>
+        );
+      };
 
-    const PipelineView = ({ leads, onLeadClick }) => {
-      return (
-        <div className="crm-pipeline">
-          {CRM_STAGES.map(stage => {
-            const stageLeads = leads.filter(l => l.stage === stage.id);
-            const stageValue = stageLeads.reduce((sum, l) => sum + (l.deal_value || 0), 0);
-            return (
-              <div key={stage.id} className="crm-column">
-                <div className="crm-column-header" style={{ borderColor: stage.color }}>
-                  <div>
-                    <div className="crm-column-title" style={{ color: stage.color }}>{stage.icon} {stage.label}</div>
-                    <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px' }}>{formatCurrency(stageValue)}</div>
+      const PipelineView = ({ leads, onLeadClick, onStageChange }) => {
+        const [dragOverStage, setDragOverStage] = React.useState(null);
+
+        const handleDragOver = (e, stageId) => {
+          e.preventDefault();
+          e.dataTransfer.dropEffect = 'move';
+          if (dragOverStage !== stageId) setDragOverStage(stageId);
+        };
+
+        const handleDragLeave = (e) => {
+          if (!e.currentTarget.contains(e.relatedTarget)) {
+            setDragOverStage(null);
+          }
+        };
+
+        const handleDrop = (e, stageId) => {
+          e.preventDefault();
+          setDragOverStage(null);
+          const leadId = e.dataTransfer.getData('text/plain');
+          if (!leadId) return;
+          const lead = leads.find(l => l.id === leadId);
+          if (lead && lead.stage !== stageId && onStageChange) {
+            onStageChange(leadId, stageId);
+          }
+        };
+
+        return (
+          <div className="crm-pipeline">
+            {CRM_STAGES.map(stage => {
+              const stageLeads = leads.filter(l => l.stage === stage.id);
+              const stageValue = stageLeads.reduce((sum, l) => sum + (l.deal_value || 0), 0);
+              const isOver = dragOverStage === stage.id;
+              return (
+                <div
+                  key={stage.id}
+                  className={'crm-column' + (isOver ? ' drag-over' : '')}
+                  onDragOver={(e) => handleDragOver(e, stage.id)}
+                  onDragLeave={handleDragLeave}
+                  onDrop={(e) => handleDrop(e, stage.id)}
+                >
+                  <div className="crm-column-header" style={{ borderColor: stage.color }}>
+                    <div>
+                      <div className="crm-column-title" style={{ color: stage.color }}>{stage.icon} {stage.label}</div>
+                      <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px' }}>{formatCurrency(stageValue)}</div>
+                    </div>
+                    <div className="crm-column-count">{stageLeads.length}</div>
                   </div>
-                  <div className="crm-column-count">{stageLeads.length}</div>
+                  <div style={{ flex: 1, overflowY: 'auto' }}>
+                    {isOver && <div className="crm-drop-placeholder">Drop here</div>}
+                    {stageLeads.map(lead => <LeadCard key={lead.id} lead={lead} onClick={onLeadClick} />)}
+                    {stageLeads.length === 0 && !isOver && <div style={{ textAlign: 'center', padding: '20px', color: '#cbd5e1', fontSize: '13px' }}>No leads</div>}
+                  </div>
                 </div>
-                <div style={{ flex: 1, overflowY: 'auto' }}>
-                  {stageLeads.map(lead => <LeadCard key={lead.id} lead={lead} onClick={onLeadClick} />)}
-                  {stageLeads.length === 0 && <div style={{ textAlign: 'center', padding: '20px', color: '#cbd5e1', fontSize: '13px' }}>No leads</div>}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      );
-    };
-
-    const LeadListView = ({ leads, onLeadClick }) => {
-      return (
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 overflow-x-auto">
-          <table className="status-table">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Company</th>
-                <th>Email</th>
-                <th>Phone</th>
-                <th>Source</th>
-                <th>Stage</th>
-                <th>Deal Value</th>
-                <th>Trailer Interest</th>
-                <th>Created</th>
-              </tr>
-            </thead>
-            <tbody>
-              {leads.map(lead => (
-                <tr key={lead.id} onClick={() => onLeadClick(lead)} style={{ cursor: 'pointer' }}>
-                  <td className="font-semibold">{lead.name}</td>
-                  <td className="text-sm">{lead.company || '-'}</td>
-                  <td className="text-sm">{lead.email || '-'}</td>
-                  <td className="text-sm">{lead.phone || '-'}</td>
-                  <td><SourceBadge source={lead.source} /></td>
-                  <td><StageBadge stageId={lead.stage} /></td>
-                  <td className="font-semibold text-green-600">{lead.deal_value ? formatCurrency(lead.deal_value) : '-'}</td>
-                  <td className="text-sm">{lead.trailer_interest || '-'}</td>
-                  <td className="text-xs text-gray-500">{lead.created_at ? new Date(lead.created_at).toLocaleDateString('en-AU') : '-'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      );
-    };
-
-    const AddLeadModal = ({ onClose, onSave, editLead }) => {
-      const [form, setForm] = useState(editLead || {
-        name: '', email: '', phone: '', company: '', source: 'Website',
-        stage: 'new_lead', deal_value: '', trailer_interest: '', notes: '', assigned_to: 'Luke',
-        meta_lead_id: '', fbclid: '', campaign_name: '',
-      });
+              );
+            })}
+          </div>
+        );
+      };
 
       const handleSave = async () => {
         if (!form.name.trim()) return;
@@ -2036,7 +2066,7 @@
 
           {/* View */}
           {viewMode === 'pipeline' ? (
-            <PipelineView leads={filtered} onLeadClick={setSelectedLead} />
+            <PipelineView leads={filtered} onLeadClick={setSelectedLead} onStageChange={handleStageChange} />
           ) : (
             <LeadListView leads={filtered} onLeadClick={setSelectedLead} />
           )}
