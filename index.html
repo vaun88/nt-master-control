@@ -23,6 +23,9 @@
   <!-- Babel Standalone -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
 
+  <!-- Supabase JS Client -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
   <style>
     body {
       font-family: 'Inter', sans-serif;
@@ -254,6 +257,229 @@
       font-size: 80px;
       margin-bottom: 20px;
       opacity: 0.7;
+    }
+
+    /* CRM Styles */
+    .crm-pipeline {
+      display: flex;
+      gap: 16px;
+      overflow-x: auto;
+      padding-bottom: 16px;
+      min-height: 500px;
+    }
+
+    .crm-column {
+      min-width: 280px;
+      max-width: 280px;
+      background: #f8fafc;
+      border-radius: 12px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .crm-column-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid;
+    }
+
+    .crm-column-title {
+      font-weight: 700;
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .crm-column-count {
+      background: white;
+      border-radius: 50%;
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 700;
+      color: #475569;
+      border: 1px solid #e2e8f0;
+    }
+
+    .crm-lead-card {
+      background: white;
+      border-radius: 10px;
+      padding: 14px;
+      margin-bottom: 10px;
+      border: 1px solid #e2e8f0;
+      cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+    }
+
+    .crm-lead-card:hover {
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      border-color: #cbd5e1;
+      transform: translateY(-1px);
+    }
+
+    .crm-lead-name {
+      font-weight: 600;
+      font-size: 14px;
+      color: #1e293b;
+      margin-bottom: 4px;
+    }
+
+    .crm-lead-company {
+      font-size: 12px;
+      color: #64748b;
+      margin-bottom: 8px;
+    }
+
+    .crm-lead-value {
+      font-weight: 700;
+      font-size: 15px;
+      color: #059669;
+    }
+
+    .crm-lead-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px solid #f1f5f9;
+    }
+
+    .crm-source-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .crm-source-meta { background: #dbeafe; color: #1e40af; }
+    .crm-source-google { background: #fef3c7; color: #92400e; }
+    .crm-source-website { background: #dcfce7; color: #166534; }
+    .crm-source-referral { background: #f3e8ff; color: #6b21a8; }
+    .crm-source-walkin { background: #e0f2fe; color: #0c4a6e; }
+    .crm-source-phone { background: #fce7f3; color: #9d174d; }
+    .crm-source-other { background: #f1f5f9; color: #475569; }
+
+    .crm-modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      padding: 20px;
+    }
+
+    .crm-modal {
+      background: white;
+      border-radius: 16px;
+      width: 100%;
+      max-width: 640px;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+    }
+
+    .crm-modal-header {
+      padding: 20px 24px;
+      border-bottom: 1px solid #e2e8f0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .crm-modal-body {
+      padding: 24px;
+    }
+
+    .crm-form-group {
+      margin-bottom: 16px;
+    }
+
+    .crm-form-label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: #475569;
+      margin-bottom: 6px;
+    }
+
+    .crm-form-input {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 14px;
+      transition: border-color 0.2s;
+      box-sizing: border-box;
+    }
+
+    .crm-form-input:focus {
+      outline: none;
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
+    }
+
+    .crm-activity-item {
+      display: flex;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid #f1f5f9;
+    }
+
+    .crm-activity-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      margin-top: 6px;
+      flex-shrink: 0;
+    }
+
+    .crm-tab-active {
+      border-bottom: 2px solid #2563eb;
+      color: #2563eb;
+      font-weight: 600;
+    }
+
+    .crm-tab {
+      padding: 8px 16px;
+      cursor: pointer;
+      font-size: 14px;
+      color: #64748b;
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s;
+    }
+
+    .crm-tab:hover {
+      color: #1e293b;
+    }
+
+    .crm-move-btn {
+      padding: 4px 10px;
+      font-size: 11px;
+      border-radius: 6px;
+      cursor: pointer;
+      border: 1px solid #e2e8f0;
+      background: white;
+      color: #475569;
+      transition: all 0.15s;
+    }
+
+    .crm-move-btn:hover {
+      background: #f1f5f9;
+      border-color: #cbd5e1;
     }
   </style>
 </head>
@@ -529,6 +755,602 @@
       checkmark: '\u2713',                          // checkmark
       bullet: '\u2022',                             // bullet
       arrow: '\u2192',                              // right arrow
+      phone: String.fromCodePoint(0x1F4DE),          // telephone
+      email: String.fromCodePoint(0x2709),           // envelope
+      note: String.fromCodePoint(0x1F4DD),           // memo
+      plus: String.fromCodePoint(0x2795),            // plus
+      target: String.fromCodePoint(0x1F3AF),         // target
+      megaphone: String.fromCodePoint(0x1F4E3),      // megaphone
+      handshake: String.fromCodePoint(0x1F91D),      // handshake
+      fire: String.fromCodePoint(0x1F525),           // fire
+      star: String.fromCodePoint(0x2B50),            // star
+      clock: String.fromCodePoint(0x1F551),          // clock
+      trophy: String.fromCodePoint(0x1F3C6),         // trophy
+      cross: String.fromCodePoint(0x274C),           // cross mark
+      funnel: String.fromCodePoint(0x1F3AF),         // funnel (target as proxy)
+      truck: String.fromCodePoint(0x1F69A),          // truck
+    };
+
+    // ========== CRM CONFIGURATION ==========
+    // Supabase credentials - will be populated once project is created
+    const SUPABASE_CONFIG = {
+      url: 'https://vbzjkpayqglhmyeqfdbr.supabase.co',
+      anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZiemprcGF5cWdsaG15ZXFmZGJyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4MzI0NDYsImV4cCI6MjA5MjQwODQ0Nn0.xNmoeZROuFV-jSJvKUVeM0XoSrUR5TqZJJ5OdQDUQls',
+    };
+
+    // Initialize Supabase client (falls back to localStorage if not configured)
+    let supabaseClient = null;
+    try {
+      if (window.supabase && SUPABASE_CONFIG.url && SUPABASE_CONFIG.anonKey && SUPABASE_CONFIG.url !== '') {
+        supabaseClient = window.supabase.createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.anonKey);
+        console.log('Supabase connected:', SUPABASE_CONFIG.url);
+      }
+    } catch(e) { console.warn('Supabase not available, using localStorage fallback:', e); }
+
+    // CRM Pipeline Stages
+    const CRM_STAGES = [
+      { id: 'new_lead', label: 'New Lead', color: '#3b82f6', icon: ICONS.star },
+      { id: 'contacted', label: 'Contacted', color: '#8b5cf6', icon: ICONS.phone },
+      { id: 'qualified', label: 'Qualified', color: '#f59e0b', icon: ICONS.target },
+      { id: 'quoted', label: 'Quote Sent', color: '#06b6d4', icon: ICONS.dollar },
+      { id: 'negotiation', label: 'Negotiation', color: '#ec4899', icon: ICONS.handshake },
+      { id: 'won', label: 'Won', color: '#10b981', icon: ICONS.trophy },
+      { id: 'lost', label: 'Lost', color: '#ef4444', icon: ICONS.cross },
+    ];
+
+    const LEAD_SOURCES = ['Meta Ads', 'Google Ads', 'Website', 'Referral', 'Walk-in', 'Phone', 'Other'];
+
+    const SOURCE_COLORS = {
+      'Meta Ads': 'crm-source-meta',
+      'Google Ads': 'crm-source-google',
+      'Website': 'crm-source-website',
+      'Referral': 'crm-source-referral',
+      'Walk-in': 'crm-source-walkin',
+      'Phone': 'crm-source-phone',
+      'Other': 'crm-source-other',
+    };
+
+    // CRM Data Layer - Supabase with localStorage fallback
+    const CRMData = {
+      _generateId: () => 'lead_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
+
+      loadLeads: async () => {
+        if (supabaseClient) {
+          try {
+            const { data, error } = await supabaseClient.from('leads').select('*').order('created_at', { ascending: false });
+            if (!error && data) return data;
+          } catch(e) { console.warn('Supabase fetch failed, using localStorage'); }
+        }
+        try {
+          return JSON.parse(localStorage.getItem('crm_leads') || '[]');
+        } catch(e) { return []; }
+      },
+
+      saveLead: async (lead) => {
+        if (supabaseClient) {
+          try {
+            if (lead.id && !lead.id.startsWith('lead_')) {
+              const { data, error } = await supabaseClient.from('leads').update(lead).eq('id', lead.id).select().single();
+              if (!error) return data;
+            } else {
+              const newLead = { ...lead };
+              delete newLead.id;
+              const { data, error } = await supabaseClient.from('leads').insert(newLead).select().single();
+              if (!error) return data;
+            }
+          } catch(e) { console.warn('Supabase save failed, using localStorage'); }
+        }
+        // localStorage fallback
+        const leads = JSON.parse(localStorage.getItem('crm_leads') || '[]');
+        if (lead.id) {
+          const idx = leads.findIndex(l => l.id === lead.id);
+          if (idx >= 0) { leads[idx] = { ...leads[idx], ...lead, updated_at: new Date().toISOString() }; }
+          else { lead.id = lead.id || CRMData._generateId(); lead.created_at = new Date().toISOString(); leads.unshift(lead); }
+        } else {
+          lead.id = CRMData._generateId();
+          lead.created_at = new Date().toISOString();
+          lead.updated_at = new Date().toISOString();
+          leads.unshift(lead);
+        }
+        localStorage.setItem('crm_leads', JSON.stringify(leads));
+        return lead;
+      },
+
+      deleteLead: async (leadId) => {
+        if (supabaseClient) {
+          try {
+            await supabaseClient.from('leads').delete().eq('id', leadId);
+            return true;
+          } catch(e) {}
+        }
+        const leads = JSON.parse(localStorage.getItem('crm_leads') || '[]');
+        localStorage.setItem('crm_leads', JSON.stringify(leads.filter(l => l.id !== leadId)));
+        return true;
+      },
+
+      updateStage: async (leadId, newStage) => {
+        if (supabaseClient) {
+          try {
+            const { data, error } = await supabaseClient.from('leads').update({ stage: newStage, updated_at: new Date().toISOString() }).eq('id', leadId).select().single();
+            if (!error) {
+              // Log activity
+              await supabaseClient.from('activities').insert({ lead_id: leadId, type: 'stage_change', note: 'Moved to ' + CRM_STAGES.find(s => s.id === newStage).label, created_at: new Date().toISOString() });
+              // Fire CAPI event if Meta lead
+              CRMData._fireCAPIEvent(data, newStage);
+              return data;
+            }
+          } catch(e) {}
+        }
+        const leads = JSON.parse(localStorage.getItem('crm_leads') || '[]');
+        const idx = leads.findIndex(l => l.id === leadId);
+        if (idx >= 0) {
+          leads[idx].stage = newStage;
+          leads[idx].updated_at = new Date().toISOString();
+          localStorage.setItem('crm_leads', JSON.stringify(leads));
+          // Log activity locally
+          const activities = JSON.parse(localStorage.getItem('crm_activities') || '[]');
+          activities.unshift({ id: 'act_' + Date.now(), lead_id: leadId, type: 'stage_change', note: 'Moved to ' + CRM_STAGES.find(s => s.id === newStage).label, created_at: new Date().toISOString() });
+          localStorage.setItem('crm_activities', JSON.stringify(activities));
+          CRMData._fireCAPIEvent(leads[idx], newStage);
+          return leads[idx];
+        }
+        return null;
+      },
+
+      addActivity: async (leadId, type, note) => {
+        const activity = { lead_id: leadId, type, note, created_at: new Date().toISOString() };
+        if (supabaseClient) {
+          try {
+            const { data, error } = await supabaseClient.from('activities').insert(activity).select().single();
+            if (!error) return data;
+          } catch(e) {}
+        }
+        activity.id = 'act_' + Date.now();
+        const activities = JSON.parse(localStorage.getItem('crm_activities') || '[]');
+        activities.unshift(activity);
+        localStorage.setItem('crm_activities', JSON.stringify(activities));
+        return activity;
+      },
+
+      getActivities: async (leadId) => {
+        if (supabaseClient) {
+          try {
+            const { data, error } = await supabaseClient.from('activities').select('*').eq('lead_id', leadId).order('created_at', { ascending: false });
+            if (!error) return data;
+          } catch(e) {}
+        }
+        const activities = JSON.parse(localStorage.getItem('crm_activities') || '[]');
+        return activities.filter(a => a.lead_id === leadId);
+      },
+
+      _fireCAPIEvent: (lead, stage) => {
+        // Meta Conversions API - fires server-side via Vercel function
+        if (!lead.source || lead.source !== 'Meta Ads') return;
+        const stageMap = { 'contacted': 'Contact', 'qualified': 'QualifiedLead', 'quoted': 'Application', 'won': 'Purchase', 'lost': 'Other' };
+        const eventName = stageMap[stage];
+        if (!eventName) return;
+        try {
+          fetch('/api/meta-capi', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              event_name: eventName,
+              lead_email: lead.email,
+              lead_phone: lead.phone,
+              deal_value: lead.deal_value || 0,
+              currency: 'AUD',
+              fbclid: lead.fbclid || '',
+              meta_lead_id: lead.meta_lead_id || '',
+              stage: stage,
+            }),
+          }).catch(e => console.warn('CAPI event failed:', e));
+        } catch(e) {}
+      },
+    };
+
+    // Demo/seed leads for first use
+    const DEMO_LEADS = [
+      { id: 'lead_demo_1', name: 'James Mitchell', email: 'james@mitchellconstruction.com.au', phone: '0412 345 678', company: 'Mitchell Construction', source: 'Meta Ads', stage: 'qualified', deal_value: 18500, trailer_interest: 'Tradesman 8x5', assigned_to: 'Luke', notes: 'Needs 3 units for fleet. Interested in bulk pricing.', meta_lead_id: 'ml_12345', fbclid: 'fb.1.abc123', campaign_name: 'Tradesman Trailers - QLD', created_at: '2026-04-15T09:30:00Z', updated_at: '2026-04-18T14:20:00Z' },
+      { id: 'lead_demo_2', name: 'Sarah Chen', email: 'sarah@coastallandscaping.com.au', phone: '0423 456 789', company: 'Coastal Landscaping', source: 'Website', stage: 'new_lead', deal_value: 8900, trailer_interest: 'Motorbike Trailer Dual', assigned_to: 'Luke', notes: 'Enquired via website contact form.', meta_lead_id: '', fbclid: '', campaign_name: '', created_at: '2026-04-20T11:00:00Z', updated_at: '2026-04-20T11:00:00Z' },
+      { id: 'lead_demo_3', name: 'Dave Thompson', email: 'dave@outbackadventures.com.au', phone: '0434 567 890', company: 'Outback Adventures', source: 'Meta Ads', stage: 'quoted', deal_value: 42000, trailer_interest: 'Apex Toy Hauler', assigned_to: 'Luke', notes: 'Looking for 2x toy haulers for rental fleet. High value deal.', meta_lead_id: 'ml_67890', fbclid: 'fb.1.def456', campaign_name: 'Toy Hauler - National', created_at: '2026-04-10T08:15:00Z', updated_at: '2026-04-19T16:45:00Z' },
+      { id: 'lead_demo_4', name: 'Lisa Park', email: 'lisa@parkplumbing.com.au', phone: '0445 678 901', company: 'Park Plumbing Services', source: 'Referral', stage: 'contacted', deal_value: 12500, trailer_interest: 'Tradesman 8x5', assigned_to: 'Luke', notes: 'Referred by James Mitchell. Needs tradesman trailer.', meta_lead_id: '', fbclid: '', campaign_name: '', created_at: '2026-04-18T13:20:00Z', updated_at: '2026-04-19T10:00:00Z' },
+      { id: 'lead_demo_5', name: 'Ryan OBrien', email: 'ryan@northernfreight.com.au', phone: '0456 789 012', company: 'Northern Freight Co', source: 'Meta Ads', stage: 'negotiation', deal_value: 95000, trailer_interest: 'Combo XL', assigned_to: 'Luke', notes: 'Major fleet deal. Wants 2x Combo XL. Discussing delivery timeline.', meta_lead_id: 'ml_11111', fbclid: 'fb.1.ghi789', campaign_name: 'Commercial Fleet - NT', created_at: '2026-04-05T07:00:00Z', updated_at: '2026-04-21T09:30:00Z' },
+      { id: 'lead_demo_6', name: 'Emma Wilson', email: 'emma@wilsonfarms.com.au', phone: '0467 890 123', company: 'Wilson Farms', source: 'Phone', stage: 'won', deal_value: 15800, trailer_interest: 'Tradesman 8x5', assigned_to: 'Luke', notes: 'Purchased tradesman trailer. Delivery scheduled.', meta_lead_id: '', fbclid: '', campaign_name: '', created_at: '2026-03-28T10:00:00Z', updated_at: '2026-04-12T15:00:00Z' },
+      { id: 'lead_demo_7', name: 'Mark Stevens', email: 'mark@stevenstransport.com.au', phone: '0478 901 234', company: 'Stevens Transport', source: 'Google Ads', stage: 'lost', deal_value: 28000, trailer_interest: 'Motorbike Trailer Dual', assigned_to: 'Luke', notes: 'Went with competitor - price was key factor.', meta_lead_id: '', fbclid: '', campaign_name: '', created_at: '2026-03-20T14:30:00Z', updated_at: '2026-04-08T11:00:00Z' },
+      { id: 'lead_demo_8', name: 'Tom Anderson', email: 'tom@andersoncivil.com.au', phone: '0489 012 345', company: 'Anderson Civil', source: 'Meta Ads', stage: 'new_lead', deal_value: 55000, trailer_interest: 'Combo XL', assigned_to: 'Luke', notes: 'New Meta lead - combo trailer for civil works.', meta_lead_id: 'ml_22222', fbclid: 'fb.1.jkl012', campaign_name: 'Commercial Fleet - NT', created_at: '2026-04-22T06:30:00Z', updated_at: '2026-04-22T06:30:00Z' },
+    ];
+
+    const initDemoLeads = () => {
+      const existing = JSON.parse(localStorage.getItem('crm_leads') || '[]');
+      if (existing.length === 0) {
+        localStorage.setItem('crm_leads', JSON.stringify(DEMO_LEADS));
+        // Demo activities
+        const demoActivities = [
+          { id: 'act_d1', lead_id: 'lead_demo_1', type: 'stage_change', note: 'Moved to Qualified', created_at: '2026-04-18T14:20:00Z' },
+          { id: 'act_d2', lead_id: 'lead_demo_1', type: 'note', note: 'Called - interested in bulk pricing for 3 tradesman units', created_at: '2026-04-17T10:00:00Z' },
+          { id: 'act_d3', lead_id: 'lead_demo_1', type: 'stage_change', note: 'Moved to Contacted', created_at: '2026-04-16T09:00:00Z' },
+          { id: 'act_d4', lead_id: 'lead_demo_3', type: 'stage_change', note: 'Moved to Quote Sent', created_at: '2026-04-19T16:45:00Z' },
+          { id: 'act_d5', lead_id: 'lead_demo_3', type: 'note', note: 'Sent quote for 2x Apex Toy Haulers at $21k each', created_at: '2026-04-19T16:30:00Z' },
+          { id: 'act_d6', lead_id: 'lead_demo_5', type: 'stage_change', note: 'Moved to Negotiation', created_at: '2026-04-21T09:30:00Z' },
+          { id: 'act_d7', lead_id: 'lead_demo_5', type: 'note', note: 'Discussing delivery timeline and bulk discount', created_at: '2026-04-21T09:00:00Z' },
+          { id: 'act_d8', lead_id: 'lead_demo_6', type: 'stage_change', note: 'Moved to Won', created_at: '2026-04-12T15:00:00Z' },
+        ];
+        localStorage.setItem('crm_activities', JSON.stringify(demoActivities));
+        return DEMO_LEADS;
+      }
+      return existing;
+    };
+
+    // ========== CRM COMPONENTS ==========
+
+    const SourceBadge = ({ source }) => {
+      const colorClass = SOURCE_COLORS[source] || 'crm-source-other';
+      return <span className={'crm-source-badge ' + colorClass}>{source}</span>;
+    };
+
+    const StageBadge = ({ stageId }) => {
+      const stage = CRM_STAGES.find(s => s.id === stageId);
+      if (!stage) return null;
+      return <span className="badge" style={{ backgroundColor: stage.color + '20', color: stage.color }}>{stage.label}</span>;
+    };
+
+    const LeadCard = ({ lead, onClick }) => (
+      <div className="crm-lead-card" onClick={() => onClick(lead)}>
+        <div className="crm-lead-name">{lead.name}</div>
+        <div className="crm-lead-company">{lead.company || 'No company'}</div>
+        {lead.trailer_interest && <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '6px' }}>{ICONS.truck} {lead.trailer_interest}</div>}
+        <div className="crm-lead-meta">
+          <span className="crm-lead-value">{lead.deal_value ? formatCurrency(lead.deal_value) : '-'}</span>
+          <SourceBadge source={lead.source} />
+        </div>
+        {lead.source === 'Meta Ads' && lead.campaign_name && <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '6px' }}>{ICONS.megaphone} {lead.campaign_name}</div>}
+      </div>
+    );
+
+    const PipelineView = ({ leads, onLeadClick }) => {
+      return (
+        <div className="crm-pipeline">
+          {CRM_STAGES.map(stage => {
+            const stageLeads = leads.filter(l => l.stage === stage.id);
+            const stageValue = stageLeads.reduce((sum, l) => sum + (l.deal_value || 0), 0);
+            return (
+              <div key={stage.id} className="crm-column">
+                <div className="crm-column-header" style={{ borderColor: stage.color }}>
+                  <div>
+                    <div className="crm-column-title" style={{ color: stage.color }}>{stage.icon} {stage.label}</div>
+                    <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px' }}>{formatCurrency(stageValue)}</div>
+                  </div>
+                  <div className="crm-column-count">{stageLeads.length}</div>
+                </div>
+                <div style={{ flex: 1, overflowY: 'auto' }}>
+                  {stageLeads.map(lead => <LeadCard key={lead.id} lead={lead} onClick={onLeadClick} />)}
+                  {stageLeads.length === 0 && <div style={{ textAlign: 'center', padding: '20px', color: '#cbd5e1', fontSize: '13px' }}>No leads</div>}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      );
+    };
+
+    const LeadListView = ({ leads, onLeadClick }) => {
+      return (
+        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 overflow-x-auto">
+          <table className="status-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Company</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Source</th>
+                <th>Stage</th>
+                <th>Deal Value</th>
+                <th>Trailer Interest</th>
+                <th>Created</th>
+              </tr>
+            </thead>
+            <tbody>
+              {leads.map(lead => (
+                <tr key={lead.id} onClick={() => onLeadClick(lead)} style={{ cursor: 'pointer' }}>
+                  <td className="font-semibold">{lead.name}</td>
+                  <td className="text-sm">{lead.company || '-'}</td>
+                  <td className="text-sm">{lead.email || '-'}</td>
+                  <td className="text-sm">{lead.phone || '-'}</td>
+                  <td><SourceBadge source={lead.source} /></td>
+                  <td><StageBadge stageId={lead.stage} /></td>
+                  <td className="font-semibold text-green-600">{lead.deal_value ? formatCurrency(lead.deal_value) : '-'}</td>
+                  <td className="text-sm">{lead.trailer_interest || '-'}</td>
+                  <td className="text-xs text-gray-500">{lead.created_at ? new Date(lead.created_at).toLocaleDateString('en-AU') : '-'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      );
+    };
+
+    const AddLeadModal = ({ onClose, onSave, editLead }) => {
+      const [form, setForm] = useState(editLead || {
+        name: '', email: '', phone: '', company: '', source: 'Website',
+        stage: 'new_lead', deal_value: '', trailer_interest: '', notes: '', assigned_to: 'Luke',
+        meta_lead_id: '', fbclid: '', campaign_name: '',
+      });
+
+      const handleSave = async () => {
+        if (!form.name.trim()) return;
+        const lead = { ...form, deal_value: parseFloat(form.deal_value) || 0 };
+        await onSave(lead);
+        onClose();
+      };
+
+      const updateField = (field, value) => setForm(prev => ({ ...prev, [field]: value }));
+
+      return (
+        <div className="crm-modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+          <div className="crm-modal">
+            <div className="crm-modal-header">
+              <h3 className="text-lg font-bold text-gray-900">{editLead ? 'Edit Lead' : 'Add New Lead'}</h3>
+              <button onClick={onClose} className="text-gray-500 hover:text-gray-700 text-2xl">{'\u00D7'}</button>
+            </div>
+            <div className="crm-modal-body">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="crm-form-group">
+                  <label className="crm-form-label">Name *</label>
+                  <input className="crm-form-input" value={form.name} onChange={e => updateField('name', e.target.value)} placeholder="Full name" />
+                </div>
+                <div className="crm-form-group">
+                  <label className="crm-form-label">Company</label>
+                  <input className="crm-form-input" value={form.company} onChange={e => updateField('company', e.target.value)} placeholder="Company name" />
+                </div>
+                <div className="crm-form-group">
+                  <label className="crm-form-label">Email</label>
+                  <input className="crm-form-input" type="email" value={form.email} onChange={e => updateField('email', e.target.value)} placeholder="email@example.com" />
+                </div>
+                <div className="crm-form-group">
+                  <label className="crm-form-label">Phone</label>
+                  <input className="crm-form-input" value={form.phone} onChange={e => updateField('phone', e.target.value)} placeholder="0412 345 678" />
+                </div>
+                <div className="crm-form-group">
+                  <label className="crm-form-label">Source</label>
+                  <select className="crm-form-input" value={form.source} onChange={e => updateField('source', e.target.value)}>
+                    {LEAD_SOURCES.map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </div>
+                <div className="crm-form-group">
+                  <label className="crm-form-label">Stage</label>
+                  <select className="crm-form-input" value={form.stage} onChange={e => updateField('stage', e.target.value)}>
+                    {CRM_STAGES.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
+                  </select>
+                </div>
+                <div className="crm-form-group">
+                  <label className="crm-form-label">Deal Value (AUD)</label>
+                  <input className="crm-form-input" type="number" value={form.deal_value} onChange={e => updateField('deal_value', e.target.value)} placeholder="0.00" />
+                </div>
+                <div className="crm-form-group">
+                  <label className="crm-form-label">Trailer Interest</label>
+                  <input className="crm-form-input" value={form.trailer_interest} onChange={e => updateField('trailer_interest', e.target.value)} placeholder="e.g. Tradesman 8x5" />
+                </div>
+              </div>
+              <div className="crm-form-group">
+                <label className="crm-form-label">Notes</label>
+                <textarea className="crm-form-input" rows="3" value={form.notes} onChange={e => updateField('notes', e.target.value)} placeholder="Additional notes..."></textarea>
+              </div>
+              {form.source === 'Meta Ads' && (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4" style={{ marginTop: '8px', padding: '12px', background: '#eff6ff', borderRadius: '8px' }}>
+                  <div className="crm-form-group" style={{ marginBottom: 0 }}>
+                    <label className="crm-form-label" style={{ color: '#1e40af' }}>{ICONS.megaphone} Meta Lead ID</label>
+                    <input className="crm-form-input" value={form.meta_lead_id} onChange={e => updateField('meta_lead_id', e.target.value)} placeholder="ml_xxxxx" />
+                  </div>
+                  <div className="crm-form-group" style={{ marginBottom: 0 }}>
+                    <label className="crm-form-label" style={{ color: '#1e40af' }}>FB Click ID</label>
+                    <input className="crm-form-input" value={form.fbclid} onChange={e => updateField('fbclid', e.target.value)} placeholder="fb.1.xxxxx" />
+                  </div>
+                  <div className="crm-form-group" style={{ marginBottom: 0 }}>
+                    <label className="crm-form-label" style={{ color: '#1e40af' }}>Campaign</label>
+                    <input className="crm-form-input" value={form.campaign_name} onChange={e => updateField('campaign_name', e.target.value)} placeholder="Campaign name" />
+                  </div>
+                </div>
+              )}
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '20px' }}>
+                <button onClick={onClose} className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">Cancel</button>
+                <button onClick={handleSave} className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium">
+                  {editLead ? 'Update Lead' : 'Add Lead'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    const LeadDetailModal = ({ lead, onClose, onStageChange, onDelete, onEdit }) => {
+      const [activities, setActivities] = useState([]);
+      const [newNote, setNewNote] = useState('');
+      const [detailTab, setDetailTab] = useState('details');
+
+      useEffect(() => {
+        CRMData.getActivities(lead.id).then(setActivities);
+      }, [lead.id]);
+
+      const handleAddNote = async () => {
+        if (!newNote.trim()) return;
+        await CRMData.addActivity(lead.id, 'note', newNote);
+        setNewNote('');
+        const updated = await CRMData.getActivities(lead.id);
+        setActivities(updated);
+      };
+
+      const currentStageIdx = CRM_STAGES.findIndex(s => s.id === lead.stage);
+
+      const activityTypeIcons = {
+        'stage_change': ICONS.arrow,
+        'note': ICONS.note,
+        'call': ICONS.phone,
+        'email': ICONS.email,
+      };
+
+      const activityTypeColors = {
+        'stage_change': '#3b82f6',
+        'note': '#f59e0b',
+        'call': '#10b981',
+        'email': '#8b5cf6',
+      };
+
+      return (
+        <div className="crm-modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+          <div className="crm-modal" style={{ maxWidth: '720px' }}>
+            <div className="crm-modal-header">
+              <div>
+                <h3 className="text-lg font-bold text-gray-900">{lead.name}</h3>
+                <p className="text-sm text-gray-500">{lead.company || 'No company'} {ICONS.bullet} {lead.trailer_interest || 'No trailer specified'}</p>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <button onClick={() => onEdit(lead)} className="px-3 py-1.5 text-xs rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200">Edit</button>
+                <button onClick={() => { if (confirm('Delete this lead?')) { onDelete(lead.id); onClose(); } }} className="px-3 py-1.5 text-xs rounded-lg bg-red-50 text-red-600 hover:bg-red-100">Delete</button>
+                <button onClick={onClose} className="text-gray-500 hover:text-gray-700 text-2xl ml-2">{'\u00D7'}</button>
+              </div>
+            </div>
+
+            {/* Stage Progress */}
+            <div style={{ padding: '16px 24px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+              <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+                {CRM_STAGES.filter(s => s.id !== 'lost').map((stage, idx) => {
+                  const isActive = stage.id === lead.stage;
+                  const isPast = idx < currentStageIdx && lead.stage !== 'lost';
+                  return (
+                    <div key={stage.id} style={{ flex: 1, textAlign: 'center' }}>
+                      <div
+                        onClick={() => onStageChange(lead.id, stage.id)}
+                        style={{
+                          height: '6px', borderRadius: '3px', cursor: 'pointer',
+                          background: isActive ? stage.color : isPast ? stage.color + '80' : '#e2e8f0',
+                          transition: 'all 0.2s',
+                        }}
+                      ></div>
+                      <div style={{ fontSize: '10px', marginTop: '4px', color: isActive ? stage.color : '#94a3b8', fontWeight: isActive ? 700 : 400 }}>
+                        {stage.label}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              {lead.stage === 'lost' && <div style={{ textAlign: 'center', marginTop: '8px' }}><span className="badge badge-red">LOST</span></div>}
+            </div>
+
+            {/* Tabs */}
+            <div style={{ display: 'flex', borderBottom: '1px solid #e2e8f0', padding: '0 24px' }}>
+              {['details', 'activity', 'meta'].map(tab => (
+                <div key={tab} className={'crm-tab' + (detailTab === tab ? ' crm-tab-active' : '')} onClick={() => setDetailTab(tab)}>
+                  {tab === 'details' ? 'Details' : tab === 'activity' ? 'Activity' : 'Meta Data'}
+                </div>
+              ))}
+            </div>
+
+            <div className="crm-modal-body">
+              {detailTab === 'details' && (
+                <div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div><p className="text-xs text-gray-500">Email</p><p className="text-sm font-medium">{lead.email || '-'}</p></div>
+                    <div><p className="text-xs text-gray-500">Phone</p><p className="text-sm font-medium">{lead.phone || '-'}</p></div>
+                    <div><p className="text-xs text-gray-500">Source</p><p className="text-sm"><SourceBadge source={lead.source} /></p></div>
+                    <div><p className="text-xs text-gray-500">Deal Value</p><p className="text-sm font-bold text-green-600">{lead.deal_value ? formatCurrency(lead.deal_value) : '-'}</p></div>
+                    <div><p className="text-xs text-gray-500">Assigned To</p><p className="text-sm font-medium">{lead.assigned_to || '-'}</p></div>
+                    <div><p className="text-xs text-gray-500">Created</p><p className="text-sm">{lead.created_at ? new Date(lead.created_at).toLocaleDateString('en-AU') : '-'}</p></div>
+                  </div>
+                  {lead.notes && (
+                    <div style={{ marginTop: '16px', padding: '12px', background: '#f8fafc', borderRadius: '8px' }}>
+                      <p className="text-xs text-gray-500 font-semibold mb-1">Notes</p>
+                      <p className="text-sm text-gray-700">{lead.notes}</p>
+                    </div>
+                  )}
+                  {/* Quick move buttons */}
+                  <div style={{ marginTop: '16px' }}>
+                    <p className="text-xs text-gray-500 font-semibold mb-2">Move to Stage</p>
+                    <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                      {CRM_STAGES.filter(s => s.id !== lead.stage).map(stage => (
+                        <button key={stage.id} className="crm-move-btn" style={{ borderColor: stage.color + '40' }}
+                          onClick={() => onStageChange(lead.id, stage.id)}>
+                          {stage.icon} {stage.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {detailTab === 'activity' && (
+                <div>
+                  <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
+                    <input className="crm-form-input" value={newNote} onChange={e => setNewNote(e.target.value)}
+                      placeholder="Add a note..." onKeyDown={e => { if (e.key === 'Enter') handleAddNote(); }} style={{ flex: 1 }} />
+                    <button onClick={handleAddNote} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm">Add</button>
+                  </div>
+                  <div>
+                    {activities.length === 0 && <p className="text-sm text-gray-400 text-center py-4">No activity yet</p>}
+                    {activities.map(act => (
+                      <div key={act.id} className="crm-activity-item">
+                        <div className="crm-activity-dot" style={{ backgroundColor: activityTypeColors[act.type] || '#94a3b8' }}></div>
+                        <div style={{ flex: 1 }}>
+                          <p className="text-sm text-gray-800">{activityTypeIcons[act.type] || ''} {act.note}</p>
+                          <p className="text-xs text-gray-400 mt-1">{act.created_at ? new Date(act.created_at).toLocaleString('en-AU') : ''}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {detailTab === 'meta' && (
+                <div>
+                  {lead.source === 'Meta Ads' ? (
+                    <div className="space-y-4">
+                      <div style={{ padding: '16px', background: '#eff6ff', borderRadius: '10px', border: '1px solid #bfdbfe' }}>
+                        <p className="text-sm font-bold text-blue-800 mb-3">{ICONS.megaphone} Meta Attribution Data</p>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div><p className="text-xs text-blue-600">Meta Lead ID</p><p className="text-sm font-mono">{lead.meta_lead_id || 'N/A'}</p></div>
+                          <div><p className="text-xs text-blue-600">FB Click ID (fbclid)</p><p className="text-sm font-mono" style={{ wordBreak: 'break-all' }}>{lead.fbclid || 'N/A'}</p></div>
+                          <div><p className="text-xs text-blue-600">Campaign</p><p className="text-sm font-medium">{lead.campaign_name || 'N/A'}</p></div>
+                          <div><p className="text-xs text-blue-600">CAPI Status</p><p className="text-sm">{lead.fbclid ? <span className="badge badge-green">Trackable</span> : <span className="badge badge-amber">No fbclid</span>}</p></div>
+                        </div>
+                      </div>
+                      <div style={{ padding: '12px', background: '#f0fdf4', borderRadius: '8px', border: '1px solid #bbf7d0' }}>
+                        <p className="text-xs text-green-700 font-semibold mb-1">CAPI Feedback Loop</p>
+                        <p className="text-xs text-green-600">When you move this lead through stages, conversion events are automatically sent back to Meta via the Conversions API. This helps Meta optimise your ad targeting based on real deal outcomes.</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <p className="text-gray-400 text-sm">This lead did not come from Meta Ads</p>
+                      <p className="text-gray-400 text-xs mt-2">Meta attribution data is only available for leads captured via Meta Lead Ads</p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    const CRMKPIs = ({ leads }) => {
+      const totalLeads = leads.length;
+      const pipelineValue = leads.filter(l => !['won', 'lost'].includes(l.stage)).reduce((sum, l) => sum + (l.deal_value || 0), 0);
+      const wonDeals = leads.filter(l => l.stage === 'won');
+      const wonValue = wonDeals.reduce((sum, l) => sum + (l.deal_value || 0), 0);
+      const closedDeals = leads.filter(l => ['won', 'lost'].includes(l.stage));
+      const conversionRate = closedDeals.length > 0 ? Math.round((wonDeals.length / closedDeals.length) * 100) : 0;
+      const metaLeads = leads.filter(l => l.source === 'Meta Ads').length;
+
+      return (
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-6">
+          <KPICard title="Total Leads" value={totalLeads} icon={ICONS.people} color="text-blue-500" />
+          <KPICard title="Pipeline Value" value={formatCurrency(pipelineValue)} icon={ICONS.money} color="text-purple-500" />
+          <KPICard title="Won Value" value={formatCurrency(wonValue)} icon={ICONS.trophy} color="text-green-500" />
+          <KPICard title="Win Rate" value={conversionRate + '%'} icon={ICONS.target} color="text-amber-500" />
+          <KPICard title="Meta Leads" value={metaLeads} icon={ICONS.megaphone} color="text-blue-600" />
+        </div>
+      );
     };
 
     // KPI Card Component
@@ -724,7 +1546,7 @@
                       <p className="font-bold text-gray-900">{container.vessel}</p>
                       <p className="text-sm text-gray-600">{container.container}</p>
                     </div>
-                    <span className="text-xs text-gray-500">ET@: {container.eta}</span>
+                    <span className="text-xs text-gray-500">ETA: {container.eta}</span>
                   </div>
                   <div className="progress-bar">
                     <div className="progress-fill" style={{ width: container.progress + '%' }}></div>
@@ -1113,22 +1935,133 @@
       );
     };
 
-    const CRMPage = () => (
-      <div className="coming-soon">
-        <div className="coming-soon-icon">{String.fromCodePoint(0x1F680)}</div>
-        <h2 className="text-3xl font-bold text-gray-900">Coming Soon</h2>
-        <p className="text-xl text-gray-600 mt-4">CRM module is under development</p>
-        <div className="mt-8 text-left">
-          <p className="text-gray-700 font-semibold mb-4">Planned Features:</p>
-          <ul className="space-y-2 text-gray-600">
-            <li>{ICONS.checkmark} Lead Management</li>
-            <li>{ICONS.checkmark} Sales Pipeline</li>
-            <li>{ICONS.checkmark} Customer Database</li>
-            <li>{ICONS.checkmark} Follow-up Automation</li>
-          </ul>
+    const CRMPage = ({ crmLeads, setCrmLeads }) => {
+      const [viewMode, setViewMode] = useState('pipeline');
+      const [showAddModal, setShowAddModal] = useState(false);
+      const [selectedLead, setSelectedLead] = useState(null);
+      const [editLead, setEditLead] = useState(null);
+      const [search, setSearch] = useState('');
+      const [filterSource, setFilterSource] = useState('');
+      const [filterStage, setFilterStage] = useState('');
+
+      const handleSaveLead = async (leadData) => {
+        const saved = await CRMData.saveLead(leadData);
+        const refreshed = await CRMData.loadLeads();
+        setCrmLeads(refreshed);
+        setEditLead(null);
+      };
+
+      const handleStageChange = async (leadId, newStage) => {
+        await CRMData.updateStage(leadId, newStage);
+        const refreshed = await CRMData.loadLeads();
+        setCrmLeads(refreshed);
+        if (selectedLead && selectedLead.id === leadId) {
+          setSelectedLead(refreshed.find(l => l.id === leadId));
+        }
+      };
+
+      const handleDeleteLead = async (leadId) => {
+        await CRMData.deleteLead(leadId);
+        const refreshed = await CRMData.loadLeads();
+        setCrmLeads(refreshed);
+      };
+
+      const handleEditFromDetail = (lead) => {
+        setSelectedLead(null);
+        setEditLead(lead);
+        setShowAddModal(true);
+      };
+
+      let filtered = crmLeads;
+      if (search) {
+        const s = search.toLowerCase();
+        filtered = filtered.filter(l => (l.name && l.name.toLowerCase().includes(s)) || (l.company && l.company.toLowerCase().includes(s)) || (l.email && l.email.toLowerCase().includes(s)) || (l.trailer_interest && l.trailer_interest.toLowerCase().includes(s)));
+      }
+      if (filterSource) filtered = filtered.filter(l => l.source === filterSource);
+      if (filterStage) filtered = filtered.filter(l => l.stage === filterStage);
+
+      const metaLeadCount = crmLeads.filter(l => l.source === 'Meta Ads').length;
+      const supabaseConnected = !!supabaseClient;
+
+      return (
+        <div className="space-y-6">
+          <CRMKPIs leads={crmLeads} />
+
+          {/* Connection Status Banner */}
+          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+            <div style={{ padding: '10px 16px', borderRadius: '8px', fontSize: '12px', fontWeight: 600, background: supabaseConnected ? '#dcfce7' : '#fef3c7', color: supabaseConnected ? '#166534' : '#92400e', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+              {supabaseConnected ? ICONS.check : ICONS.clock} Supabase: {supabaseConnected ? 'Connected' : 'Using localStorage (demo mode)'}
+            </div>
+            <div style={{ padding: '10px 16px', borderRadius: '8px', fontSize: '12px', fontWeight: 600, background: '#dbeafe', color: '#1e40af', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+              {ICONS.megaphone} Meta Leads: {metaLeadCount} {ICONS.bullet} CAPI: Ready
+            </div>
+          </div>
+
+          {/* Toolbar */}
+          <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="flex" style={{ borderRadius: '8px', overflow: 'hidden', border: '1px solid #e2e8f0' }}>
+                  <button onClick={() => setViewMode('pipeline')}
+                    style={{ padding: '8px 16px', fontSize: '13px', fontWeight: 600, background: viewMode === 'pipeline' ? '#2563eb' : 'white', color: viewMode === 'pipeline' ? 'white' : '#64748b', border: 'none', cursor: 'pointer' }}>
+                    {ICONS.funnel} Pipeline
+                  </button>
+                  <button onClick={() => setViewMode('list')}
+                    style={{ padding: '8px 16px', fontSize: '13px', fontWeight: 600, background: viewMode === 'list' ? '#2563eb' : 'white', color: viewMode === 'list' ? 'white' : '#64748b', border: 'none', cursor: 'pointer', borderLeft: '1px solid #e2e8f0' }}>
+                    {ICONS.chart} List
+                  </button>
+                </div>
+                <input type="text" placeholder="Search leads..." value={search} onChange={e => setSearch(e.target.value)}
+                  className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" style={{ width: '200px' }} />
+                <select value={filterSource} onChange={e => setFilterSource(e.target.value)}
+                  className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                  <option value="">All Sources</option>
+                  {LEAD_SOURCES.map(s => <option key={s} value={s}>{s}</option>)}
+                </select>
+                {viewMode === 'list' && (
+                  <select value={filterStage} onChange={e => setFilterStage(e.target.value)}
+                    className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                    <option value="">All Stages</option>
+                    {CRM_STAGES.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
+                  </select>
+                )}
+              </div>
+              <button onClick={() => { setEditLead(null); setShowAddModal(true); }}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium text-sm">
+                {ICONS.plus} Add Lead
+              </button>
+            </div>
+            <p className="text-xs text-gray-500 mt-2">{filtered.length} leads {search || filterSource || filterStage ? '(filtered)' : ''}</p>
+          </div>
+
+          {/* View */}
+          {viewMode === 'pipeline' ? (
+            <PipelineView leads={filtered} onLeadClick={setSelectedLead} />
+          ) : (
+            <LeadListView leads={filtered} onLeadClick={setSelectedLead} />
+          )}
+
+          {/* Modals */}
+          {showAddModal && (
+            <AddLeadModal
+              onClose={() => { setShowAddModal(false); setEditLead(null); }}
+              onSave={handleSaveLead}
+              editLead={editLead}
+            />
+          )}
+
+          {selectedLead && (
+            <LeadDetailModal
+              lead={selectedLead}
+              onClose={() => setSelectedLead(null)}
+              onStageChange={handleStageChange}
+              onDelete={handleDeleteLead}
+              onEdit={handleEditFromDetail}
+            />
+          )}
         </div>
-      </div>
-    );
+      );
+    };
 
     const SettingsPage = () => (
       <div className="space-y-6">
@@ -1155,10 +2088,31 @@
         </div>
 
         <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+          <h3 className="text-lg font-bold text-gray-900 mb-4">CRM Configuration</h3>
+          <div className="space-y-4">
+            <div>
+              <p className="text-sm text-gray-600 font-semibold">Supabase</p>
+              <p className="text-sm text-gray-800">{supabaseClient ? <span className="badge badge-green">Connected</span> : <span className="badge badge-amber">Not configured - using localStorage</span>}</p>
+              {!supabaseClient && <p className="text-xs text-gray-500 mt-1">Set SUPABASE_CONFIG.url and anonKey in index.html to connect to Supabase</p>}
+            </div>
+            <div>
+              <p className="text-sm text-gray-600 font-semibold">Meta Conversions API</p>
+              <p className="text-sm text-gray-800"><span className="badge badge-blue">Ready</span> - events fire on deal stage changes for Meta leads</p>
+              <p className="text-xs text-gray-500 mt-1">Configure META_PIXEL_ID and META_ACCESS_TOKEN in Vercel environment variables</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-600 font-semibold">Meta Lead Ads Webhook</p>
+              <p className="text-sm text-gray-800">Endpoint: /api/meta-webhook</p>
+              <p className="text-xs text-gray-500 mt-1">Configure in Meta Business Suite under Leads Access</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
           <h3 className="text-lg font-bold text-gray-900 mb-4">Version Information</h3>
           <div className="space-y-2">
-            <p className="text-sm text-gray-800"><span className="font-semibold">Version:</span> 1.1</p>
-            <p className="text-sm text-gray-800"><span className="font-semibold">Status:</span> Live Sheet Data</p>
+            <p className="text-sm text-gray-800"><span className="font-semibold">Version:</span> 2.0</p>
+            <p className="text-sm text-gray-800"><span className="font-semibold">Status:</span> Live Sheet Data + CRM</p>
           </div>
         </div>
       </div>
@@ -1174,6 +2128,7 @@
       const [loading, setLoading] = useState(true);
       const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
       const [tradeFinance, setTradeFinance] = useState(loadTradeFinance());
+      const [crmLeads, setCrmLeads] = useState([]);
 
       const togglePaid = (bankRef) => {
         setTradeFinance(prev => {
@@ -1203,6 +2158,9 @@
 
       useEffect(() => {
         loadData();
+        // Initialize CRM data
+        initDemoLeads();
+        CRMData.loadLeads().then(setCrmLeads);
       }, []);
 
       useEffect(() => {
@@ -1225,7 +2183,7 @@
         containers: { title: 'Containers', component: <ContainersPage containerArrivalsData={containerArrivalsData} /> },
         'trade-finance': { title: 'Trade Finance', component: <TradeFinancePage tradeFinance={tradeFinance} togglePaid={togglePaid} /> },
         pricing: { title: 'Pricing', component: <PricingPage data={pricingData} /> },
-        crm: { title: 'CRM', component: <CRMPage /> },
+        crm: { title: 'CRM', component: <CRMPage crmLeads={crmLeads} setCrmLeads={setCrmLeads} /> },
         settings: { title: 'Settings', component: <SettingsPage /> },
       };
 
@@ -1248,7 +2206,7 @@
                 { id: 'containers', label: 'Containers', icon: ICONS.ship },
                 { id: 'trade-finance', label: 'Trade Finance', icon: ICONS.money },
                 { id: 'pricing', label: 'Pricing', icon: ICONS.dollarSign },
-                { id: 'crm', label: 'CRM', icon: ICONS.people, badge: 'Coming Soon' },
+                { id: 'crm', label: 'CRM', icon: ICONS.people },
                 { id: 'settings', label: 'Settings', icon: ICONS.gear },
               ].map(item => (
                 <div key={item.id}>
@@ -1265,7 +2223,7 @@
             </nav>
 
             <div className="p-6 border-t border-slate-700 text-center">
-              <p className="text-xs text-slate-400">v1.1 - Live Sheet Data</p>
+              <p className="text-xs text-slate-400">v2.0 - CRM + Meta</p>
             </div>
           </div>
 
